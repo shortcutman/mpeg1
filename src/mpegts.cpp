@@ -32,6 +32,40 @@ pg1::TSHeader pg1::read_ts_pkt_header(std::span<std::byte>& data) {
     return header;
 }
 
+pg1::PSIHeader pg1::read_psi_header(std::span<std::byte>& data) {
+    PSIHeader header;
+
+    util::bitspan bits(data);
+
+    auto pointer_field = bits.read_bits_be(8);
+    if (pointer_field != 0) {
+        throw std::runtime_error("unhandled");
+    }
+    data = data.subspan(1);
+
+    header.table_id = bits.read_bits_be(8); //table id
+    header.section_syntax_indicator = bits.read_bits_be(1); //section syntax indicator
+    bits.read_bits_be(1); //private bit
+    bits.read_bits_be(2); //reserved
+    bits.read_bits_be(2); //unused
+    header.section_length = bits.read_bits_be(10); //section length
+
+    data = data.subspan(3);
+
+    if (header.section_syntax_indicator) {
+        header.table_id_extension = bits.read_bits_be(16); //table id ext
+        bits.read_bits_be(2); //reserved bits
+        header.version_number = bits.read_bits_be(5); //version number
+        bits.read_bits_be(1); //current/next indicator
+        header.section_number = bits.read_bits_be(8); //section number
+        header.last_section_number = bits.read_bits_be(8); //last section number
+        data = data.subspan(5);
+    }
+
+    return header;
+}
+
+
 void pg1::loop_ts_data(std::span<std::byte>& data) {
     std::map<uint16_t, size_t> pid_map;
 

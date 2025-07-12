@@ -21,7 +21,21 @@ namespace pg1 {
         uint8_t continuity_counter;
     };
 
+    struct PSIHeader {
+        uint8_t table_id;
+        bool section_syntax_indicator;
+        uint16_t section_length;
+        uint16_t table_id_extension;
+        uint8_t version_number;
+        uint8_t section_number;
+        uint8_t last_section_number;
+    };
+
     TSHeader read_ts_pkt_header(std::span<std::byte>& data);
 
+    PSIHeader read_psi_header(std::span<std::byte>& data);
+
     void loop_ts_data(std::span<std::byte>& data);
+
+    
 }
