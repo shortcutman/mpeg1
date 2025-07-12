@@ -141,6 +141,9 @@ pg1::PMT pg1::read_pmt_pkt(std::span<std::byte>& data) {
 
 void pg1::loop_ts_data(std::span<std::byte>& data) {
     std::map<uint16_t, size_t> pid_map;
+    std::optional<PAT> pat;
+    std::optional<uint16_t> pmt_pid;
+    bool displayed_pmt = false;
 
     while (!data.empty() || data.size() > 188) {
         auto header = read_ts_pkt_header(data);
@@ -152,7 +155,23 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
             pid_map[header.pid]++;
         }
 
-        data = data.subspan(184);
+        if (header.pid == 0 && !pat) {
+            pat = read_pat_pkt(data);
+            pmt_pid = pat->programs.front().program_map_pid;
+
+            std::println("Read PAT, PMT PID is: {}", *pmt_pid);
+        } else if (pmt_pid && header.pid == *pmt_pid && !displayed_pmt) {
+            displayed_pmt = true;
+            auto pmt = read_pmt_pkt(data);
+            std::println("PMT:");
+            std::println("\tPCR PID: {}", pmt.pcr_pid);
+
+            for (auto es : pmt.elementary_streams) {
+                std::println("\tES Stream: {}, PID: {}", es.stream_type, es.elementary_pid);
+            }
+        } else {
+            data = data.subspan(184);
+        }
     }
 
     std::println("Summary");
