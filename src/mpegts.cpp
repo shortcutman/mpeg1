@@ -158,8 +158,8 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
         if (header.pid == 0 && !pat) {
             pat = read_pat_pkt(data);
             pmt_pid = pat->programs.front().program_map_pid;
-
-            std::println("Read PAT, PMT PID is: {}", *pmt_pid);
+            std::println("PAT");
+            std::println("\tPMT PID is: {}", *pmt_pid);
         } else if (pmt_pid && header.pid == *pmt_pid && !displayed_pmt) {
             displayed_pmt = true;
             auto pmt = read_pmt_pkt(data);
@@ -174,9 +174,8 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
         }
     }
 
-    std::println("Summary");
+    std::println("Packets found");
     for (auto& v : pid_map) {
-        std::println("\tPID: {}, Packet count: {}", v.first, v.second);
+        std::println("\tPID: {}, Count: {}", v.first, v.second);
     }
 }
-
