@@ -1,0 +1,30 @@
+
+//------------------------------------------------------------------------------
+// mpegts.cpp
+//------------------------------------------------------------------------------
+
+#include "mpegts.hpp"
+
+#include "bitspan.hpp"
+
+pg1::TSHeader pg1::read_ts_pkt_header(std::span<std::byte>& data) {
+    TSHeader header;
+
+    util::bitspan bits(data);
+
+    if (bits.read_bits_be(8) != 0x47) {
+        throw std::runtime_error("Expected MPEG2TS Sync Byte");
+    }
+
+    header.tei = bits.read_bits_be(1);
+    header.pusi = bits.read_bits_be(1);
+    header.priority = bits.read_bits_be(1);
+    header.pid = bits.read_bits_be(13);
+    header.tsc = bits.read_bits_be(2);
+    header.afc = bits.read_bits_be(2);
+    header.continuity_counter = bits.read_bits_be(4);
+
+    data = data.subspan(4);
+
+    return header;
+}
