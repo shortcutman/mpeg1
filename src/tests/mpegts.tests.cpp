@@ -33,6 +33,12 @@ TEST(MPEGTS, read_ts_header) {
     EXPECT_TRUE(span.empty());
 }
 
+TEST(MPEGTS, read_ts_header_fail_no_sync_byte) {
+    auto data = make_bytes(0x00, 0x47, 0x40, 0x11, 0x10);
+    auto span = std::span<std::byte>(data);
+    EXPECT_THROW(pg1::read_ts_pkt_header(span), std::runtime_error);
+}
+
 TEST(MPEGTS, read_psi_header_pat) {
     auto data = make_bytes(0x00, 0x00, 0xB0, 0x0D, 0x00, 0x01, 0xC1, 0x00, 0x00);
     auto span = std::span<std::byte>(data);
