@@ -7,6 +7,9 @@
 
 #include "bitspan.hpp"
 
+#include <map>
+#include <print>
+
 pg1::TSHeader pg1::read_ts_pkt_header(std::span<std::byte>& data) {
     TSHeader header;
 
@@ -28,3 +31,26 @@ pg1::TSHeader pg1::read_ts_pkt_header(std::span<std::byte>& data) {
 
     return header;
 }
+
+void pg1::loop_ts_data(std::span<std::byte>& data) {
+    std::map<uint16_t, size_t> pid_map;
+
+    while (!data.empty() || data.size() > 188) {
+        auto header = read_ts_pkt_header(data);
+
+        if (!pid_map.contains(header.pid)) {
+            std::println("Found new PID: {}", header.pid);
+            pid_map.insert({header.pid, 1});
+        } else {
+            pid_map[header.pid]++;
+        }
+
+        data = data.subspan(184);
+    }
+
+    std::println("Summary");
+    for (auto& v : pid_map) {
+        std::println("\tPID: {}, Packet count: {}", v.first, v.second);
+    }
+}
+

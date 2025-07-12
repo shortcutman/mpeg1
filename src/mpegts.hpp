@@ -22,4 +22,6 @@ namespace pg1 {
     };
 
     TSHeader read_ts_pkt_header(std::span<std::byte>& data);
+
+    void loop_ts_data(std::span<std::byte>& data);
 }
