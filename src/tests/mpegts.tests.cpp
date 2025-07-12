@@ -70,3 +70,16 @@ TEST(MPEGTS, read_psi_header_pmt) {
 
     EXPECT_TRUE(span.empty());
 }
+
+TEST(MPEGTS, read_pat) {
+    std::array<std::byte, 184> filled;
+    filled.fill(std::byte{0xff});
+    auto data = make_bytes(0x00, 0x00, 0xB0, 0x0D, 0x00, 0x01, 0xC1, 0x00, 0x00, 0x00, 0x01, 0xF0, 0x00, 0x2A, 0xB1, 0x04, 0xB2);
+    std::copy(data.begin(), data.end(), filled.begin());
+    auto span = std::span<std::byte>(filled);
+    auto pat = pg1::read_pat_pkt(span);
+
+    ASSERT_EQ(pat.programs.size(), 1);
+    EXPECT_EQ(pat.programs.front().program_num, 1);
+    EXPECT_EQ(pat.programs.front().program_map_pid, 4096);
+}

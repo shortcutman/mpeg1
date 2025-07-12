@@ -65,6 +65,36 @@ pg1::PSIHeader pg1::read_psi_header(std::span<std::byte>& data) {
     return header;
 }
 
+pg1::PAT pg1::read_pat_pkt(std::span<std::byte>& data) {
+    PAT pat;
+
+    if (data.size() < 184) {
+        throw std::runtime_error("Expected TS Packet minus TS header.");
+    }
+
+    auto pkt_span = data.first(184);
+    auto psi_header = read_psi_header(pkt_span);
+    if (psi_header.table_id != 0) {
+        throw std::runtime_error("Expected PSI table_id to equal 0 for PAT.");
+    } else if (!psi_header.section_syntax_indicator) {
+        throw std::runtime_error("Expected PSI section_syntax_indicator to be set.");
+    }
+
+    for (size_t programs = psi_header.section_length / 8; programs > 0; programs--) {
+        PAT::Program program;
+        util::bitspan bits(pkt_span);
+        program.program_num = bits.read_bits_be(16);
+        bits.read_bits_be(3);
+        program.program_map_pid = bits.read_bits_be(13);
+
+        pat.programs.push_back(program);
+        pkt_span = pkt_span.subspan(4);
+    }
+
+    data = data.subspan(184);
+
+    return pat;
+}
 
 void pg1::loop_ts_data(std::span<std::byte>& data) {
     std::map<uint16_t, size_t> pid_map;

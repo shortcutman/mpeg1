@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <span>
-
+#include <vector>
 
 namespace pg1 {
 
@@ -31,11 +31,19 @@ namespace pg1 {
         uint8_t last_section_number;
     };
 
+    struct PAT {
+        struct Program {
+            uint16_t program_num;
+            uint16_t program_map_pid;
+        };
+
+        std::vector<Program> programs;
+    };
+
     TSHeader read_ts_pkt_header(std::span<std::byte>& data);
 
     PSIHeader read_psi_header(std::span<std::byte>& data);
+    PAT read_pat_pkt(std::span<std::byte>& data);
 
     void loop_ts_data(std::span<std::byte>& data);
-
-    
 }
