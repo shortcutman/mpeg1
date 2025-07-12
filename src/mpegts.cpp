@@ -8,6 +8,7 @@
 #include "bitspan.hpp"
 
 #include <map>
+#include <optional>
 #include <print>
 
 pg1::TSHeader pg1::read_ts_pkt_header(std::span<std::byte>& data) {
@@ -94,6 +95,48 @@ pg1::PAT pg1::read_pat_pkt(std::span<std::byte>& data) {
     data = data.subspan(184);
 
     return pat;
+}
+
+pg1::PMT pg1::read_pmt_pkt(std::span<std::byte>& data) {
+    PMT pmt;
+
+    if (data.size() < 184) {
+        throw std::runtime_error("Expected TS Packet minus TS header.");
+    }
+
+    auto pkt_span = data.first(184);
+    auto psi_header = read_psi_header(pkt_span);
+    if (psi_header.table_id != 2) {
+        throw std::runtime_error("Expected PSI table_id to equal 2 for PMT.");
+    } else if (!psi_header.section_syntax_indicator) {
+        throw std::runtime_error("Expected PSI section_syntax_indicator to be set.");
+    }
+
+    util::bitspan bits(pkt_span);
+    bits.read_bits_be(3);
+    pmt.pcr_pid = bits.read_bits_be(13);
+    bits.read_bits_be(4);
+    auto program_info_length = bits.read_bits_be(12);
+    pkt_span = pkt_span.subspan(4 + program_info_length);
+
+    psi_header.section_length -= 5 + 4 + program_info_length;
+
+    while (psi_header.section_length > 4) {
+        PMT::ES es;
+        util::bitspan bits(pkt_span);
+        es.stream_type = bits.read_bits_be(8);
+        bits.read_bits_be(3);
+        es.elementary_pid = bits.read_bits_be(13);
+        bits.read_bits_be(4);
+        auto es_info_length = bits.read_bits_be(12);
+        pkt_span = pkt_span.subspan(5 + es_info_length);
+        psi_header.section_length -= 5 + es_info_length;
+        pmt.elementary_streams.push_back(es);
+    }
+
+    data = data.subspan(184);
+
+    return pmt;
 }
 
 void pg1::loop_ts_data(std::span<std::byte>& data) {

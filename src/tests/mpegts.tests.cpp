@@ -71,15 +71,37 @@ TEST(MPEGTS, read_psi_header_pmt) {
     EXPECT_TRUE(span.empty());
 }
 
-TEST(MPEGTS, read_pat) {
+TEST(MPEGTS, read_pat_packet) {
     std::array<std::byte, 184> filled;
     filled.fill(std::byte{0xff});
     auto data = make_bytes(0x00, 0x00, 0xB0, 0x0D, 0x00, 0x01, 0xC1, 0x00, 0x00, 0x00, 0x01, 0xF0, 0x00, 0x2A, 0xB1, 0x04, 0xB2);
     std::copy(data.begin(), data.end(), filled.begin());
     auto span = std::span<std::byte>(filled);
+
     auto pat = pg1::read_pat_pkt(span);
 
     ASSERT_EQ(pat.programs.size(), 1);
     EXPECT_EQ(pat.programs.front().program_num, 1);
     EXPECT_EQ(pat.programs.front().program_map_pid, 4096);
+    EXPECT_TRUE(span.empty());
+}
+
+TEST(MPEGTS, read_pmt_packet) {
+    std::array<std::byte, 184> filled;
+    filled.fill(std::byte{0xff});
+    auto data = make_bytes(0x00, 0x02, 0xB0, 0x1D, 0x00, 0x01, 0xC1, 0x00, 0x00, 0xE1, 0x00, 0xF0, 0x00, 0x02, 0xE1, 0x00, 0xF0, 0x00, 0x03, 0xE1, 0x01, 0xF0, 0x06, 0x0A, 0x04, 0x75, 0x6E, 0x64, 0x00, 0x94, 0x9D, 0x2D, 0xF0);
+    std::copy(data.begin(), data.end(), filled.begin());
+    auto span = std::span<std::byte>(filled);
+
+    auto pmt = pg1::read_pmt_pkt(span);
+
+    EXPECT_EQ(pmt.pcr_pid, 256);
+
+    ASSERT_EQ(pmt.elementary_streams.size(), 2);
+    EXPECT_EQ(pmt.elementary_streams.front().stream_type, 2);
+    EXPECT_EQ(pmt.elementary_streams.front().elementary_pid, 256);
+    EXPECT_EQ(pmt.elementary_streams.back().stream_type, 3);
+    EXPECT_EQ(pmt.elementary_streams.back().elementary_pid, 257);
+
+    EXPECT_TRUE(span.empty());
 }

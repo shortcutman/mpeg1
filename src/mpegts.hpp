@@ -40,10 +40,21 @@ namespace pg1 {
         std::vector<Program> programs;
     };
 
+    struct PMT {
+        struct ES {
+            uint8_t stream_type;
+            uint16_t elementary_pid;
+        };
+
+        uint16_t pcr_pid;
+        std::vector<ES> elementary_streams;
+    };
+
     TSHeader read_ts_pkt_header(std::span<std::byte>& data);
 
     PSIHeader read_psi_header(std::span<std::byte>& data);
     PAT read_pat_pkt(std::span<std::byte>& data);
+    PMT read_pmt_pkt(std::span<std::byte>& data);
 
     void loop_ts_data(std::span<std::byte>& data);
 }
