@@ -11,6 +11,7 @@ add_compile_options(-Wall)
 add_library(libdanpg1
     src/bitspan.cpp
     src/mpegts.cpp
+    src/mpeg1.cpp
 )
 target_include_directories(libdanpg1 INTERFACE src/)
 
@@ -36,6 +37,7 @@ enable_testing()
 add_executable(danpg1_tests
     src/tests/bitspan.tests.cpp
     src/tests/mpegts.tests.cpp
+    src/tests/mpeg1.tests.cpp
 )
 target_link_libraries(
     danpg1_tests
