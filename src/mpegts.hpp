@@ -51,6 +51,7 @@ namespace pg1 {
     };
 
     TSHeader read_ts_pkt_header(std::span<std::byte>& data);
+    void read_adaption_field(std::span<std::byte>& data);
 
     PSIHeader read_psi_header(std::span<std::byte>& data);
     PAT read_pat_pkt(std::span<std::byte>& data);

@@ -39,6 +39,21 @@ TEST(MPEGTS, read_ts_header_fail_no_sync_byte) {
     EXPECT_THROW(pg1::read_ts_pkt_header(span), std::runtime_error);
 }
 
+TEST(MPEGTS, read_adaption_field_length) {
+    auto data = make_bytes(0x01, 0x00);
+    auto span = std::span<std::byte>(data);
+    pg1::read_adaption_field(span);
+    EXPECT_TRUE(span.empty());
+}
+
+TEST(MPEGTS, read_adaption_field_length2) {
+    auto data = make_bytes(0x02, 0x01, 0x02, 0x03);
+    auto span = std::span<std::byte>(data);
+    pg1::read_adaption_field(span);
+    EXPECT_EQ(span.size(), 1);
+    EXPECT_EQ(span[0], std::byte{0x03});
+}
+
 TEST(MPEGTS, read_psi_header_pat) {
     auto data = make_bytes(0x00, 0x00, 0xB0, 0x0D, 0x00, 0x01, 0xC1, 0x00, 0x00);
     auto span = std::span<std::byte>(data);

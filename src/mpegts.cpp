@@ -33,6 +33,12 @@ pg1::TSHeader pg1::read_ts_pkt_header(std::span<std::byte>& data) {
     return header;
 }
 
+void pg1::read_adaption_field(std::span<std::byte>& data) {
+    util::bitspan bits(data);
+    auto length = bits.read_bits_be(8);
+    data = data.subspan(length + 1);
+}
+
 pg1::PSIHeader pg1::read_psi_header(std::span<std::byte>& data) {
     PSIHeader header;
 
@@ -144,9 +150,17 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
     std::optional<PAT> pat;
     std::optional<uint16_t> pmt_pid;
     bool displayed_pmt = false;
+    std::optional<uint16_t> video_es_pid;
+    std::vector<std::byte> video_es;
 
-    while (!data.empty() || data.size() > 188) {
-        auto header = read_ts_pkt_header(data);
+    while (!data.empty() && data.size() > 188) {
+        auto ts_pkt_span = data.first(188);
+
+        auto header = read_ts_pkt_header(ts_pkt_span);
+
+        if (header.afc & 0x2) {
+            read_adaption_field(ts_pkt_span);
+        }
 
         if (!pid_map.contains(header.pid)) {
             std::println("Found new PID: {}", header.pid);
@@ -155,23 +169,32 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
             pid_map[header.pid]++;
         }
 
-        if (header.pid == 0 && !pat) {
-            pat = read_pat_pkt(data);
-            pmt_pid = pat->programs.front().program_map_pid;
-            std::println("PAT");
-            std::println("\tPMT PID is: {}", *pmt_pid);
-        } else if (pmt_pid && header.pid == *pmt_pid && !displayed_pmt) {
-            displayed_pmt = true;
-            auto pmt = read_pmt_pkt(data);
-            std::println("PMT:");
-            std::println("\tPCR PID: {}", pmt.pcr_pid);
+        if (header.afc & 0x1) { //does adaption field indicate a payload?
+            if (header.pid == 0 && !pat) {
+                pat = read_pat_pkt(ts_pkt_span);
+                pmt_pid = pat->programs.front().program_map_pid;
+                std::println("PAT");
+                std::println("\tPMT PID is: {}", *pmt_pid);
+            } else if (pmt_pid && header.pid == *pmt_pid && !displayed_pmt) {
+                displayed_pmt = true;
+                auto pmt = read_pmt_pkt(ts_pkt_span);
+                std::println("PMT:");
+                std::println("\tPCR PID: {}", pmt.pcr_pid);
 
-            for (auto es : pmt.elementary_streams) {
-                std::println("\tES Stream: {}, PID: {}", es.stream_type, es.elementary_pid);
+                for (auto es : pmt.elementary_streams) {
+                    std::println("\tES Stream: {}, PID: {}", es.stream_type, es.elementary_pid);
+
+                    if (es.stream_type == 2) {
+                        video_es_pid = es.elementary_pid;
+                        std::println("\tLogged as video ES.");
+                    }
+                }
+            } else if (video_es_pid && header.pid == *video_es_pid) {
+                video_es.insert(video_es.end(), ts_pkt_span.begin(), ts_pkt_span.begin() + ts_pkt_span.size());
             }
-        } else {
-            data = data.subspan(184);
         }
+
+        data = data.subspan(188);
     }
 
     std::println("Packets found");
