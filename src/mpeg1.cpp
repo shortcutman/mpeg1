@@ -61,7 +61,7 @@ mpeg1::GroupOfPicturesHeader mpeg1::read_gop_header(std::span<std::byte>& data) 
     util::bitspan bits(data);
 
     if (bits.read_bits_be(32) != mpeg1::start_code::group_of_pictures) {
-        throw std::runtime_error("Expected sequence header start code!");
+        throw std::runtime_error("Expected group of pictures header start code!");
     }
 
     header.time_code = bits.read_bits_be(25);
