@@ -50,9 +50,7 @@ mpeg1::SequenceHeader mpeg1::read_sequence_header(std::span<std::byte>& data) {
         }
     }
 
-    auto bytes_read = bits.bits_read() / 8;
-    bytes_read += bits.bits_read() % 8 ? 1 : 0;
-    data = data.subspan(bytes_read);
+    data = data.subspan(bits.bytes_read());
 
     return header;
 }
@@ -70,9 +68,7 @@ mpeg1::GroupOfPicturesHeader mpeg1::read_gop_header(std::span<std::byte>& data) 
     header.closed_gop = bits.read_bits_be(1);
     header.broken_link = bits.read_bits_be(1);
 
-    auto bytes_read = bits.bits_read() / 8;
-    bytes_read += bits.bits_read() & 8 ? 1 : 0;
-    data = data.subspan(bytes_read);
+    data = data.subspan(bits.bytes_read());
 
     return header;
 }
