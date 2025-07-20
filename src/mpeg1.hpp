@@ -29,6 +29,4 @@ namespace mpeg1 {
 
     SequenceHeader read_sequence_header(std::span<std::byte>& data);
     GroupOfPicturesHeader read_gop_header(std::span<std::byte>& data);
-
-    constexpr uint8_t dezigzag(uint8_t index);
 }

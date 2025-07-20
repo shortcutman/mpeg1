@@ -15,4 +15,6 @@ namespace mpeg1 {
 
     extern const std::array<float, 16> PEL_ASPECT_RATIO_TABLE;
     extern const std::array<float, 16> PICTURE_RATE_TABLE;
+
+    extern const std::array<uint8_t, 64> ZIGZAG_INDEX;
 }
