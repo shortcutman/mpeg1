@@ -107,3 +107,21 @@ mpeg1::PictureHeader mpeg1::read_picture_header(std::span<std::byte>& data) {
 
     return header;
 }
+
+mpeg1::SliceHeader mpeg1::read_slice_header(util::bitspan& data) {
+    SliceHeader header;
+
+    auto start_code = data.read_bits_be(32);
+    if (start_code < mpeg1::start_code::slice_minimum || start_code > mpeg1::start_code::slice_maximum) {
+        throw std::runtime_error("Expected slice start code in valid range!");
+    }
+
+    header.vertical_position = start_code & 0xff;
+    header.quantizer_scale = data.read_bits_be(5);
+
+    while (data.read_bits_be(1) == 1) {
+        data.read_bits_be(8);
+    }
+
+    return header;
+}

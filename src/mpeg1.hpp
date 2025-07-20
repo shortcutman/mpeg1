@@ -7,6 +7,8 @@
 
 #include "mpeg1.consts.hpp"
 
+#include "bitspan.hpp"
+
 #include <cstdint>
 #include <span>
 
@@ -42,7 +44,14 @@ namespace mpeg1 {
         uint8_t backward_f_code;
     };
 
+    struct SliceHeader {
+        uint8_t vertical_position;
+        uint8_t quantizer_scale;
+    };
+
     SequenceHeader read_sequence_header(std::span<std::byte>& data);
     GroupOfPicturesHeader read_gop_header(std::span<std::byte>& data);
     PictureHeader read_picture_header(std::span<std::byte>& data);
+
+    SliceHeader read_slice_header(util::bitspan& data);
 }

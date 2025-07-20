@@ -13,6 +13,8 @@ namespace start_code {
     const uint32_t sequence = 0x000001b3;
     const uint32_t group_of_pictures = 0x000001b8;
     const uint32_t picture = 0x00000100;
+    const uint32_t slice_minimum = 0x00000101;
+    const uint32_t slice_maximum = 0x000001af;
 }
 
 const QuantizerMatrix DEFAULT_INTRA_QUANTIZER_MATRIX = {

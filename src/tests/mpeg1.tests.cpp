@@ -68,3 +68,28 @@ TEST(MPEG1, read_picture_header_fail_on_start_code) {
     auto span = std::span<std::byte>(data);
     EXPECT_THROW(mpeg1::read_picture_header(span), std::runtime_error);
 }
+
+TEST(MPEG1, read_slice_header) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x01, 0x13, 0xf8);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    auto header = mpeg1::read_slice_header(bits);
+
+    EXPECT_EQ(header.vertical_position, 1);
+    EXPECT_EQ(header.quantizer_scale, 2);
+    EXPECT_EQ(bits.bits_read(), 38);
+}
+
+TEST(MPEG1, read_slice_header_fail_on_start_code_below_min) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x00);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    EXPECT_THROW(mpeg1::read_slice_header(bits), std::runtime_error);
+}
+
+TEST(MPEG1, read_slice_header_fail_on_start_code_above_max) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0xb0);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    EXPECT_THROW(mpeg1::read_slice_header(bits), std::runtime_error);
+}
