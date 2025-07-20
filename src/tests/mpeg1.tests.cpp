@@ -64,7 +64,7 @@ TEST(MPEG1, read_picture_header_intracoded_frame) {
 }
 
 TEST(MPEG1, read_picture_header_fail_on_start_code) {
-    auto data = make_bytes(0x00, 0x00, 0x01, 0x00);
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x01, 0x00, 0x0f, 0xff);
     auto span = std::span<std::byte>(data);
     EXPECT_THROW(mpeg1::read_picture_header(span), std::runtime_error);
 }
