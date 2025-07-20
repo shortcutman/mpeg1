@@ -24,6 +24,7 @@ namespace util {
         bitspan(std::array<std::byte, N>& arr) : bitspan(std::span{arr}) {}
 
         size_t bits_read() const;
+        size_t bytes_read() const;
 
         uint32_t peek_bits_le(uint8_t bits);
         uint32_t read_bits_le(uint8_t bits);

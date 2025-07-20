@@ -26,6 +26,12 @@ size_t util::bitspan::bits_read() const {
     return _bit_offset;
 }
 
+size_t util::bitspan::bytes_read() const {
+    auto bytes = _bit_offset / 8;
+    bytes += _bit_offset % 8 ? 1 : 0;
+    return bytes;
+}
+
 uint32_t util::bitspan::peek_bits_le(uint8_t bits) {
     if (bits == 0) {
         return 0;
