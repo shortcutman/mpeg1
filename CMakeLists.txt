@@ -12,6 +12,7 @@ add_library(libdanpg1
     src/bitspan.cpp
     src/mpegts.cpp
     src/mpeg1.cpp
+    src/mpeg1.consts.cpp
 )
 target_include_directories(libdanpg1 INTERFACE src/)
 

@@ -5,16 +5,12 @@
 
 #pragma once
 
-#include <array>
+#include "mpeg1.consts.hpp"
+
 #include <cstdint>
 #include <span>
 
 namespace mpeg1 {
-    typedef std::array<uint8_t, 64> QuantizerMatrix;
-
-    extern const QuantizerMatrix DEFAULT_INTRA_QUANTIZER_MATRIX;
-    extern const QuantizerMatrix DEFAULT_NON_INTRA_QUANTIZER_MATRIX;
-
     struct SequenceHeader {
         uint16_t horizontal_size;
         uint16_t vertical_size;
