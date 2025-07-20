@@ -9,6 +9,12 @@
 #include <cstdint>
 
 namespace mpeg1 {
+
+    namespace start_code {
+        extern const uint32_t sequence;
+        extern const uint32_t group_of_pictures;
+    }
+
     typedef std::array<uint8_t, 64> QuantizerMatrix;
     extern const QuantizerMatrix DEFAULT_INTRA_QUANTIZER_MATRIX;
     extern const QuantizerMatrix DEFAULT_NON_INTRA_QUANTIZER_MATRIX;

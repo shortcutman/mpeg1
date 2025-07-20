@@ -13,7 +13,7 @@ mpeg1::SequenceHeader mpeg1::read_sequence_header(std::span<std::byte>& data) {
 
     util::bitspan bits(data);
 
-    if (bits.read_bits_be(32) != 0x000001B3) {
+    if (bits.read_bits_be(32) != mpeg1::start_code::sequence) {
         throw std::runtime_error("Expected sequence header start code!");
     }
 
@@ -60,7 +60,7 @@ mpeg1::GroupOfPicturesHeader mpeg1::read_gop_header(std::span<std::byte>& data) 
 
     util::bitspan bits(data);
 
-    if (bits.read_bits_be(32) != 0x000001b8) {
+    if (bits.read_bits_be(32) != mpeg1::start_code::group_of_pictures) {
         throw std::runtime_error("Expected sequence header start code!");
     }
 
