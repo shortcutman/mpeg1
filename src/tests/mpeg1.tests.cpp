@@ -53,3 +53,18 @@ TEST(MPEG1, read_group_of_pictures_header_fail_on_start_code) {
     auto span = std::span<std::byte>(data);
     EXPECT_THROW(mpeg1::read_gop_header(span), std::runtime_error);
 }
+
+TEST(MPEG1, read_picture_header_intracoded_frame) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x00, 0x00, 0x0f, 0xff);
+    auto span = std::span<std::byte>(data);
+    auto header = mpeg1::read_picture_header(span);
+
+    EXPECT_EQ(header.temporal_reference, 0);
+    EXPECT_EQ(header.coding_type, mpeg1::PictureHeader::CodingType::IntraCoded);
+}
+
+TEST(MPEG1, read_picture_header_fail_on_start_code) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x00);
+    auto span = std::span<std::byte>(data);
+    EXPECT_THROW(mpeg1::read_picture_header(span), std::runtime_error);
+}

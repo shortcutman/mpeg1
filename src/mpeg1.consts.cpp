@@ -12,6 +12,7 @@ namespace mpeg1 {
 namespace start_code {
     const uint32_t sequence = 0x000001b3;
     const uint32_t group_of_pictures = 0x000001b8;
+    const uint32_t picture = 0x00000100;
 }
 
 const QuantizerMatrix DEFAULT_INTRA_QUANTIZER_MATRIX = {

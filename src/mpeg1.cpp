@@ -72,3 +72,38 @@ mpeg1::GroupOfPicturesHeader mpeg1::read_gop_header(std::span<std::byte>& data) 
 
     return header;
 }
+
+mpeg1::PictureHeader mpeg1::read_picture_header(std::span<std::byte>& data) {
+    PictureHeader header;
+    util::bitspan bits(data);
+
+    if (bits.read_bits_be(32) != mpeg1::start_code::picture) {
+        throw std::runtime_error("Expected picture header start code!");
+    }
+
+    header.temporal_reference = bits.read_bits_be(10);
+    
+    auto coding_type = bits.read_bits_be(3);
+    switch (coding_type) {
+        case 1:
+            header.coding_type = PictureHeader::CodingType::IntraCoded;
+            break;
+        case 2:
+            header.coding_type = PictureHeader::CodingType::PredictiveCoded;
+            break;
+        case 3:
+            header.coding_type = PictureHeader::CodingType::BidirectionalPredCoded;
+            break;
+        
+        default:
+            throw std::runtime_error("Unsupported picture coding type.");
+            break;
+    }
+
+    header.full_pel_forward_vector = bits.read_bits_be(1);
+    header.forward_f_code = bits.read_bits_be(3);
+    header.full_pel_backward_vector = bits.read_bits_be(1);
+    header.backward_f_code = bits.read_bits_be(3);
+
+    return header;
+}

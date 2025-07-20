@@ -27,6 +27,22 @@ namespace mpeg1 {
         bool broken_link;
     };
 
+    struct PictureHeader {
+        uint16_t temporal_reference;
+        enum class CodingType {
+            IntraCoded,
+            PredictiveCoded,
+            BidirectionalPredCoded
+        } coding_type;
+        
+        bool full_pel_forward_vector;
+        uint8_t forward_f_code;
+
+        bool full_pel_backward_vector;
+        uint8_t backward_f_code;
+    };
+
     SequenceHeader read_sequence_header(std::span<std::byte>& data);
     GroupOfPicturesHeader read_gop_header(std::span<std::byte>& data);
+    PictureHeader read_picture_header(std::span<std::byte>& data);
 }

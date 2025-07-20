@@ -13,6 +13,7 @@ namespace mpeg1 {
     namespace start_code {
         extern const uint32_t sequence;
         extern const uint32_t group_of_pictures;
+        extern const uint32_t picture;
     }
 
     typedef std::array<uint8_t, 64> QuantizerMatrix;
