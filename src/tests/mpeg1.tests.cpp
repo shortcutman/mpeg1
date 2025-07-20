@@ -32,6 +32,12 @@ TEST(MPEG1, read_sequence_header) {
     EXPECT_TRUE(span.empty());
 }
 
+TEST(MPEG1, read_sequence_header_fail_on_start_code) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x00);
+    auto span = std::span<std::byte>(data);
+    EXPECT_THROW(mpeg1::read_sequence_header(span), std::runtime_error);
+}
+
 TEST(MPEG1, read_group_of_pictures_header) {
     auto data = make_bytes(0x00, 0x00, 0x01, 0xb8, 0x00, 0x08, 0x00, 0x40);
     auto span = std::span<std::byte>(data);
@@ -40,4 +46,10 @@ TEST(MPEG1, read_group_of_pictures_header) {
     EXPECT_EQ(header.closed_gop, true);
     EXPECT_EQ(header.broken_link, false);
     EXPECT_TRUE(span.empty());
+}
+
+TEST(MPEG1, read_group_of_pictures_header_fail_on_start_code) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x00);
+    auto span = std::span<std::byte>(data);
+    EXPECT_THROW(mpeg1::read_gop_header(span), std::runtime_error);
 }
