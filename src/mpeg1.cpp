@@ -121,6 +121,26 @@ mpeg1::SequenceHeader mpeg1::read_sequence_header(std::span<std::byte>& data) {
     return header;
 }
 
+mpeg1::GroupOfPicturesHeader mpeg1::read_gop_header(std::span<std::byte>& data) {
+    GroupOfPicturesHeader header;
+
+    util::bitspan bits(data);
+
+    if (bits.read_bits_be(32) != 0x000001b8) {
+        throw std::runtime_error("Expected sequence header start code!");
+    }
+
+    header.time_code = bits.read_bits_be(25);
+    header.closed_gop = bits.read_bits_be(1);
+    header.broken_link = bits.read_bits_be(1);
+
+    auto bytes_read = bits.bits_read() / 8;
+    bytes_read += bits.bits_read() & 8 ? 1 : 0;
+    data = data.subspan(bytes_read);
+
+    return header;
+}
+
 constexpr uint8_t mpeg1::dezigzag(uint8_t index) {
     const uint8_t zigzagTable[] = {
         0,   1,  8, 16,  9,  2,  3, 10,

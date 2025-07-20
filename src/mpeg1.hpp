@@ -25,7 +25,14 @@ namespace mpeg1 {
         QuantizerMatrix non_intra_quantizer_matrix = DEFAULT_NON_INTRA_QUANTIZER_MATRIX;
     };
 
+    struct GroupOfPicturesHeader {
+        uint32_t time_code;
+        bool closed_gop;
+        bool broken_link;
+    };
+
     SequenceHeader read_sequence_header(std::span<std::byte>& data);
+    GroupOfPicturesHeader read_gop_header(std::span<std::byte>& data);
 
     constexpr uint8_t dezigzag(uint8_t index);
 }

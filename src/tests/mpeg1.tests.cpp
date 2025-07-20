@@ -31,3 +31,13 @@ TEST(MPEG1, read_sequence_header) {
     EXPECT_EQ(header.non_intra_quantizer_matrix, mpeg1::DEFAULT_NON_INTRA_QUANTIZER_MATRIX);
     EXPECT_TRUE(span.empty());
 }
+
+TEST(MPEG1, read_group_of_pictures_header) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0xb8, 0x00, 0x08, 0x00, 0x40);
+    auto span = std::span<std::byte>(data);
+    auto header = mpeg1::read_gop_header(span);
+
+    EXPECT_EQ(header.closed_gop, true);
+    EXPECT_EQ(header.broken_link, false);
+    EXPECT_TRUE(span.empty());
+}
