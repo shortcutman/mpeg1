@@ -158,5 +158,12 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, CodingType coding_
         break;
     }
 
+    if (block.quant ||
+        block.motion_forward ||
+        block.motion_backward ||
+        block.pattern) {
+        throw std::runtime_error("Macroblock type unhandled.");
+    }
+
     return block;
 }
