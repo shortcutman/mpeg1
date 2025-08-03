@@ -93,3 +93,13 @@ TEST(MPEG1, read_slice_header_fail_on_start_code_above_max) {
     auto bits = util::bitspan(span);
     EXPECT_THROW(mpeg1::read_slice_header(bits), std::runtime_error);
 }
+
+TEST(MPEG1, read_block) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x01, 0x13, 0xf8, 0x00, 0x00);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    mpeg1::read_slice_header(bits); //align test data
+    auto block = mpeg1::read_macroblock(bits);
+
+    EXPECT_EQ(block.address_increment, 1);
+}

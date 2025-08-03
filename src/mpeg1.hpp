@@ -49,9 +49,20 @@ namespace mpeg1 {
         uint8_t quantizer_scale;
     };
 
+    struct Macroblock {
+        uint8_t address_increment = 0;
+
+        bool quant;
+        bool motion_forward;
+        bool motion_backward;
+        bool motion_pattern;
+        bool intra;
+    };
+
     SequenceHeader read_sequence_header(std::span<std::byte>& data);
     GroupOfPicturesHeader read_gop_header(std::span<std::byte>& data);
     PictureHeader read_picture_header(std::span<std::byte>& data);
 
     SliceHeader read_slice_header(util::bitspan& data);
+    Macroblock read_macroblock(util::bitspan& data);
 }

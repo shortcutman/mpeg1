@@ -6,7 +6,7 @@
 #include "mpeg1.hpp"
 
 #include "bitspan.hpp"
-
+#include "vlc.hpp"
 
 mpeg1::SequenceHeader mpeg1::read_sequence_header(std::span<std::byte>& data) {
     SequenceHeader header;
@@ -124,4 +124,21 @@ mpeg1::SliceHeader mpeg1::read_slice_header(util::bitspan& data) {
     }
 
     return header;
+}
+
+mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data) {
+    Macroblock block;
+
+    while (data.peek_bits_be(11) == 0x00f) {
+        data.read_bits_be(11);
+    }
+
+    while (data.peek_bits_be(11) == 0x008) {
+        data.read_bits_be(11);
+        block.address_increment += 33;
+    }
+
+    block.address_increment = mpeg1::MACROBLOCK_ADDRESSING.next_symbol(data);
+
+    return block;
 }
