@@ -142,13 +142,12 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, CodingType coding_
 
     switch (coding_type) {
         case CodingType::IntraCoded: {
-            auto type_index = mpeg1::MACROBLOCK_TYPE_INTRA_VLC.next_symbol(data);
-            auto& type_def = mpeg1::MACROBLOCK_TYPE_INTRA_DEFS[type_index];
-            block.quant = type_def.quant;
-            block.motion_forward = type_def.motion_forward;
-            block.motion_backward = type_def.motion_backward;
-            block.pattern = type_def.pattern;
-            block.intra = type_def.intra;
+            auto type = mpeg1::MACROBLOCK_TYPE_INTRA_VLC.next_symbol(data);
+            block.quant = type.quant;
+            block.motion_forward = type.motion_forward;
+            block.motion_backward = type.motion_backward;
+            block.pattern = type.pattern;
+            block.intra = type.intra;
         }
         break;
 

@@ -61,7 +61,7 @@ VLCSymbol mpeg1::VariableLengthCode<VLCSymbol>::next_symbol(util::bitspan& data)
 
     throw std::runtime_error("Couldn't find a matching code.");
 
-    return 0;
+    return VLCSymbol{};
 }
 
 const VariableLengthCode<size_t> MACROBLOCK_ADDRESSING = {{
@@ -108,9 +108,9 @@ struct MacroblockType {
     bool intra;
 };
 
-const VariableLengthCode<size_t> MACROBLOCK_TYPE_INTRA_VLC = {{
-    {0b1, 1, 0},
-    {0b01, 2, 1}
+const VariableLengthCode<MacroblockType> MACROBLOCK_TYPE_INTRA_VLC = {{
+    {0b1, 1, {false, false, false, false, true}},
+    {0b01, 2, {true, false, false, false, true}}
 }};
 
 const std::array<MacroblockType, 2> MACROBLOCK_TYPE_INTRA_DEFS = {{
