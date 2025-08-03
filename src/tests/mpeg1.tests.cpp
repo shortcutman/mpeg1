@@ -105,7 +105,7 @@ TEST(MPEG1, read_block) {
     EXPECT_EQ(block.quant, false);
     EXPECT_EQ(block.motion_forward, false);
     EXPECT_EQ(block.motion_backward, false);
-    EXPECT_EQ(block.motion_pattern, false);
+    EXPECT_EQ(block.pattern, false);
     EXPECT_EQ(block.intra, true);
 }
 

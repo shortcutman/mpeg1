@@ -57,7 +57,7 @@ namespace mpeg1 {
         bool quant;
         bool motion_forward;
         bool motion_backward;
-        bool motion_pattern;
+        bool pattern;
         bool intra;
     };
 

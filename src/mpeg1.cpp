@@ -147,7 +147,7 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, CodingType coding_
             block.quant = type_def.quant;
             block.motion_forward = type_def.motion_forward;
             block.motion_backward = type_def.motion_backward;
-            block.motion_pattern = type_def.pattern;
+            block.pattern = type_def.pattern;
             block.intra = type_def.intra;
         }
         break;
