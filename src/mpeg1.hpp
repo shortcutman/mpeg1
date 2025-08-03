@@ -67,4 +67,6 @@ namespace mpeg1 {
 
     SliceHeader read_slice_header(util::bitspan& data);
     Macroblock read_macroblock(util::bitspan& data, CodingType coding_type);
+
+    size_t calc_dct_zz_zero(size_t dc_size, size_t dc_differential);
 }

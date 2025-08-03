@@ -117,3 +117,15 @@ TEST(MPEG1, read_block_unhandled) {
     EXPECT_THROW(mpeg1::read_macroblock(bits, mpeg1::CodingType::PredictiveCoded), std::runtime_error);
     EXPECT_THROW(mpeg1::read_macroblock(bits, mpeg1::CodingType::BidirectionalPredCoded), std::runtime_error);
 }
+
+TEST(MPEG1, calc_dct_zz_zero) {
+    //From example on page 30 of ISO 11172-2:1993
+    EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b000), -7);
+    EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b001), -6);
+    EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b010), -5);
+    EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b011), -4);
+    EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b100), 4);
+    EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b101), 5);
+    EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b110), 6);
+    EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b111), 7);
+}

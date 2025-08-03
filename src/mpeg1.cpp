@@ -167,3 +167,11 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, CodingType coding_
 
     return block;
 }
+
+size_t mpeg1::calc_dct_zz_zero(size_t dc_size, size_t dc_differential) {
+    if (dc_differential & (1 << (dc_size - 1))) {
+        return dc_differential;
+    } else {
+        return ((-1) << (dc_size)) | (dc_differential + 1);
+    }
+}
