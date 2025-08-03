@@ -7,18 +7,22 @@
 
 #include "bitspan.hpp"
 
+#include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <vector>
 
 namespace mpeg1 {
 
+template<typename VLCSymbol>
 class VariableLengthCode {
 
     public:
+        template<typename Symbol>
         struct HuffmanCode {
             size_t code;
             size_t code_length;
-            size_t symbol;
+            Symbol symbol;
 
             bool operator==(const HuffmanCode& a) const = default;
             bool operator<(const HuffmanCode& b) const {
@@ -27,16 +31,40 @@ class VariableLengthCode {
         };
 
     private:
-        std::vector<HuffmanCode> _codes;
+        std::vector<HuffmanCode<VLCSymbol>> _codes;
 
     public:
-        VariableLengthCode(std::vector<HuffmanCode> codes);
+        VariableLengthCode(std::vector<HuffmanCode<VLCSymbol>> codes);
         ~VariableLengthCode() {}
 
-        size_t next_symbol(util::bitspan& data) const;
+        VLCSymbol next_symbol(util::bitspan& data) const;
 };
 
-const VariableLengthCode MACROBLOCK_ADDRESSING = {{
+template<typename VLCSymbol>
+mpeg1::VariableLengthCode<VLCSymbol>::VariableLengthCode(std::vector<HuffmanCode<VLCSymbol>> codes) {
+    _codes = std::move(codes);
+
+    std::sort(_codes.begin(), _codes.end());
+}
+
+template<typename VLCSymbol>
+VLCSymbol mpeg1::VariableLengthCode<VLCSymbol>::next_symbol(util::bitspan& data) const {
+    assert(std::is_sorted(this->_codes.begin(), this->_codes.end()));
+
+    for (auto& code : this->_codes) {
+        auto bits = data.peek_bits_be(code.code_length);
+        if (bits == code.code) {
+            data.read_bits_be(code.code_length);
+            return code.symbol;
+        }
+    }
+
+    throw std::runtime_error("Couldn't find a matching code.");
+
+    return 0;
+}
+
+const VariableLengthCode<size_t> MACROBLOCK_ADDRESSING = {{
     {0b1, 1, 1},
     {0b011, 3, 2},
     {0b010, 3, 3},
@@ -80,7 +108,7 @@ struct MacroblockType {
     bool intra;
 };
 
-const VariableLengthCode MACROBLOCK_TYPE_INTRA_VLC = {{
+const VariableLengthCode<size_t> MACROBLOCK_TYPE_INTRA_VLC = {{
     {0b1, 1, 0},
     {0b01, 2, 1}
 }};
