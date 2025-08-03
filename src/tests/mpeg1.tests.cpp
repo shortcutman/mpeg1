@@ -60,7 +60,7 @@ TEST(MPEG1, read_picture_header_intracoded_frame) {
     auto header = mpeg1::read_picture_header(span);
 
     EXPECT_EQ(header.temporal_reference, 0);
-    EXPECT_EQ(header.coding_type, mpeg1::PictureHeader::CodingType::IntraCoded);
+    EXPECT_EQ(header.coding_type, mpeg1::CodingType::IntraCoded);
 }
 
 TEST(MPEG1, read_picture_header_fail_on_start_code) {

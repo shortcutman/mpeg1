@@ -29,13 +29,15 @@ namespace mpeg1 {
         bool broken_link;
     };
 
+    enum class CodingType {
+        IntraCoded,
+        PredictiveCoded,
+        BidirectionalPredCoded
+    };
+
     struct PictureHeader {
         uint16_t temporal_reference;
-        enum class CodingType {
-            IntraCoded,
-            PredictiveCoded,
-            BidirectionalPredCoded
-        } coding_type;
+        CodingType coding_type;
         
         bool full_pel_forward_vector;
         uint8_t forward_f_code;

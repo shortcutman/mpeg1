@@ -86,13 +86,13 @@ mpeg1::PictureHeader mpeg1::read_picture_header(std::span<std::byte>& data) {
     auto coding_type = bits.read_bits_be(3);
     switch (coding_type) {
         case 1:
-            header.coding_type = PictureHeader::CodingType::IntraCoded;
+            header.coding_type = CodingType::IntraCoded;
             break;
         case 2:
-            header.coding_type = PictureHeader::CodingType::PredictiveCoded;
+            header.coding_type = CodingType::PredictiveCoded;
             break;
         case 3:
-            header.coding_type = PictureHeader::CodingType::BidirectionalPredCoded;
+            header.coding_type = CodingType::BidirectionalPredCoded;
             break;
         
         default:
