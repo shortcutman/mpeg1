@@ -99,7 +99,21 @@ TEST(MPEG1, read_block) {
     auto span = std::span<std::byte>(data);
     auto bits = util::bitspan(span);
     mpeg1::read_slice_header(bits); //align test data
-    auto block = mpeg1::read_macroblock(bits);
+    auto block = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
 
     EXPECT_EQ(block.address_increment, 1);
+    EXPECT_EQ(block.quant, false);
+    EXPECT_EQ(block.motion_forward, false);
+    EXPECT_EQ(block.motion_backward, false);
+    EXPECT_EQ(block.motion_pattern, false);
+    EXPECT_EQ(block.intra, true);
+}
+
+TEST(MPEG1, read_block_unhandled) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x01, 0x13, 0xf8, 0x00, 0x00);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    mpeg1::read_slice_header(bits); //align test data
+    EXPECT_THROW(mpeg1::read_macroblock(bits, mpeg1::CodingType::PredictiveCoded), std::runtime_error);
+    EXPECT_THROW(mpeg1::read_macroblock(bits, mpeg1::CodingType::BidirectionalPredCoded), std::runtime_error);
 }

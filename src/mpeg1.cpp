@@ -126,7 +126,7 @@ mpeg1::SliceHeader mpeg1::read_slice_header(util::bitspan& data) {
     return header;
 }
 
-mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data) {
+mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, CodingType coding_type) {
     Macroblock block;
 
     while (data.peek_bits_be(11) == 0x00f) {
@@ -139,6 +139,24 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data) {
     }
 
     block.address_increment = mpeg1::MACROBLOCK_ADDRESSING.next_symbol(data);
+
+    switch (coding_type) {
+        case CodingType::IntraCoded: {
+            auto type_index = mpeg1::MACROBLOCK_TYPE_INTRA_VLC.next_symbol(data);
+            auto& type_def = mpeg1::MACROBLOCK_TYPE_INTRA_DEFS[type_index];
+            block.quant = type_def.quant;
+            block.motion_forward = type_def.motion_forward;
+            block.motion_backward = type_def.motion_backward;
+            block.motion_pattern = type_def.pattern;
+            block.intra = type_def.intra;
+        }
+        break;
+
+        default: {
+            throw std::runtime_error("Unhandled CodingType for macroblock.");
+        }
+        break;
+    }
 
     return block;
 }

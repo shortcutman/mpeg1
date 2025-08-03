@@ -72,4 +72,22 @@ const VariableLengthCode MACROBLOCK_ADDRESSING = {{
     {0b00000011000, 11, 33},
 }};
 
+struct MacroblockType {
+    bool quant;
+    bool motion_forward;
+    bool motion_backward;
+    bool pattern;
+    bool intra;
+};
+
+const VariableLengthCode MACROBLOCK_TYPE_INTRA_VLC = {{
+    {0b1, 1, 0},
+    {0b01, 2, 1}
+}};
+
+const std::array<MacroblockType, 2> MACROBLOCK_TYPE_INTRA_DEFS = {{
+    {false, false, false, false, true},
+    {true, false, false, false, true}
+}};
+
 }
