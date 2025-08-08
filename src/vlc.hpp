@@ -64,7 +64,4 @@ VLCSymbol mpeg1::VariableLengthCode<VLCSymbol>::next_symbol(util::bitspan& data)
     return VLCSymbol{};
 }
 
-
 }
-
-
