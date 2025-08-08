@@ -6,7 +6,7 @@
 #include "mpeg1.hpp"
 
 #include "bitspan.hpp"
-#include "vlc.hpp"
+#include "mpeg1.vlc.hpp"
 
 mpeg1::SequenceHeader mpeg1::read_sequence_header(std::span<std::byte>& data) {
     SequenceHeader header;
