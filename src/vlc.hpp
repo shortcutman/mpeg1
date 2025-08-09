@@ -30,14 +30,18 @@ class VariableLengthCode {
             }
         };
 
+        typedef std::vector<HuffmanCode<VLCSymbol>> Codes;
+
     private:
-        std::vector<HuffmanCode<VLCSymbol>> _codes;
+        Codes _codes;
 
     public:
         VariableLengthCode(std::vector<HuffmanCode<VLCSymbol>> codes);
         ~VariableLengthCode() {}
 
         VLCSymbol next_symbol(util::bitspan& data) const;
+
+        const Codes& codes() const;
 };
 
 template<typename VLCSymbol>
@@ -62,6 +66,11 @@ VLCSymbol mpeg1::VariableLengthCode<VLCSymbol>::next_symbol(util::bitspan& data)
     throw std::runtime_error("Couldn't find a matching code.");
 
     return VLCSymbol{};
+}
+
+template<typename VLCSymbol>
+const VariableLengthCode<VLCSymbol>::Codes& mpeg1::VariableLengthCode<VLCSymbol>::codes() const {
+    return _codes;
 }
 
 }

@@ -39,6 +39,7 @@ add_executable(danpg1_tests
     src/tests/bitspan.tests.cpp
     src/tests/mpegts.tests.cpp
     src/tests/mpeg1.tests.cpp
+    src/tests/mpeg1.vlc.tests.cpp
 )
 target_link_libraries(
     danpg1_tests
