@@ -29,8 +29,8 @@ std::vector<std::byte> read_file(const std::string& filename) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        std::print("args are wrong");
+    if (argc < 2) {
+        std::println("Args are wrong");
     }
 
     std::string input_filepath = argv[1];
