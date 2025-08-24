@@ -153,6 +153,14 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
     std::optional<uint16_t> video_es_pid;
     std::vector<std::byte> video_es;
 
+    for (size_t i = 0; i < data.size(); i++) {
+        if (data[i] == std::byte{0x47}) {
+            data = data.subspan(i);
+            std::println("Found first 0x47 at byte no. {}", i);
+            break;
+        }
+    }
+
     while (!data.empty() && data.size() > 188) {
         auto ts_pkt_span = data.first(188);
 
