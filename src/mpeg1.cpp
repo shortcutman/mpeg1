@@ -100,10 +100,18 @@ mpeg1::PictureHeader mpeg1::read_picture_header(std::span<std::byte>& data) {
             break;
     }
 
-    header.full_pel_forward_vector = bits.read_bits_be(1);
-    header.forward_f_code = bits.read_bits_be(3);
-    header.full_pel_backward_vector = bits.read_bits_be(1);
-    header.backward_f_code = bits.read_bits_be(3);
+    header.vbv_delay = bits.read_bits_be(16);
+
+    if (header.coding_type == CodingType::PredictiveCoded ||
+        header.coding_type == CodingType::BidirectionalPredCoded) {
+        header.full_pel_forward_vector = bits.read_bits_be(1);
+        header.forward_f_code = bits.read_bits_be(3);
+    }
+
+    if (header.coding_type == CodingType::BidirectionalPredCoded) {
+        header.full_pel_backward_vector = bits.read_bits_be(1);
+        header.backward_f_code = bits.read_bits_be(3);
+    }
 
     data = data.subspan(bits.bytes_read());
 
