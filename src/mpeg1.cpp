@@ -105,6 +105,8 @@ mpeg1::PictureHeader mpeg1::read_picture_header(std::span<std::byte>& data) {
     header.full_pel_backward_vector = bits.read_bits_be(1);
     header.backward_f_code = bits.read_bits_be(3);
 
+    data = data.subspan(bits.bytes_read());
+
     return header;
 }
 
