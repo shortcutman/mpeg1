@@ -6,7 +6,11 @@
 #include "mpeg1.hpp"
 
 #include "bitspan.hpp"
+#include "idct.hpp"
 #include "mpeg1.vlc.hpp"
+#include "util.hpp"
+
+#include <print>
 
 mpeg1::SequenceHeader mpeg1::read_sequence_header(std::span<std::byte>& data) {
     SequenceHeader header;
@@ -173,6 +177,131 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, CodingType coding_
         block.pattern) {
         throw std::runtime_error("Macroblock type unhandled.");
     }
+
+    return block;
+}
+
+namespace {
+    int sign(int in) {
+        if (in > 0) return 1;
+        else if (in == 0) return 0;
+        else return -1;
+    }
+
+    // template<class InputIt, class OutputIt, class Func>
+    // void for_two(InputIt first, InputIt last, OutputIt o_first, Func op) {
+    //     for (auto& it = first; first != last; first++) {
+    //         op(*it, *o_first);
+    //     }
+    // }
+}
+
+std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, BlockContext& context) {
+    using namespace image;
+
+    std::array<Colour, 256> block;
+    for (size_t block_i = 0; block_i < 6; block_i++) {
+        std::array<int, 64> dct_recon;
+        std::fill(dct_recon.begin(), dct_recon.end(), 0);
+        int dct_dc_size = 0;
+        int& dct_dc_past = context.dct_dc_y_past;
+
+        if (block_i < 4) {
+            // dct_dc_size_luminance
+            dct_dc_size = mpeg1::BLOCK_DCT_DC_SIZE_LUMINANCE.next_symbol(data);
+        } else {
+            // dct_dc_size_chrominance
+            dct_dc_size = mpeg1::BLOCK_DCT_DC_SIZE_CHROMINANCE.next_symbol(data);
+
+            if (block_i == 4) {
+                dct_dc_past = context.dct_dc_cb_past;
+            } else if (block_i == 5) {
+                dct_dc_past = context.dct_dc_cr_past;
+            }
+        }
+
+        if (dct_dc_size > 0) {
+            size_t dct_dc_differential = data.read_bits_be(dct_dc_size);
+            dct_recon[0] = calc_dct_zz_zero(dct_dc_size, dct_dc_differential) * 8;
+        }
+
+        dct_recon[0] = dct_dc_past + dct_recon[0];
+        dct_dc_past = dct_recon[0];
+
+        size_t dct_i = 0;
+        while (data.peek_bits_be(2) != 0b10) {
+            DCTCoeff next;
+
+            if (data.peek_bits_be(6) == 0b000001) {
+                //escape code
+                data.read_bits_be(6);
+                next.run = data.read_bits_be(6);
+
+                next.level = data.read_bits_be(8);
+                if (next.level == 0x80 || next.level == 0x00) {
+                    next.level <<= 8;
+                    next.level |= data.read_bits_be(8);
+                }
+            } else {
+                next = mpeg1::BLOCK_DCT_COEFF.next_symbol(data);
+                auto sign = data.read_bits_be(1);
+                if (sign == 1) {
+                    next.level *= -1;
+                }
+            }
+            
+            dct_i += next.run + 1;
+            auto index = mpeg1::ZIGZAG_INDEX[dct_i];
+            dct_recon[index] = (2 * next.level * context.slice.quantizer_scale * context.sequence.intra_quantizer_matrix[index]) / 16;
+
+            if ((dct_recon[index] & 1) == 0) {
+                dct_recon[index] -= sign(dct_recon[index]);
+            }
+
+            if (dct_recon[index] > 2047) {
+                dct_recon[index] = 2047;
+            } else if (dct_recon[index] < -2048) {
+                dct_recon[index] = -2048;
+            }
+        }
+
+        image::idct(dct_recon);
+
+        if (block_i < 4) {
+            //y
+            auto start = 0;
+            if (block_i == 1 || block_i == 3) {
+                start += 8;
+            }
+            if (block_i == 2 || block_i == 3) {
+                start += 8 * 16; // 8 lines of 16 subpixels
+            }
+
+            auto apply = [](const int in, Colour& out) { out.y = in; };
+
+            util::transform_out(dct_recon.begin(), dct_recon.begin() + 8, block.begin() + start, apply);
+            start += 16;
+            util::transform_out(dct_recon.begin() + 8, dct_recon.begin() + 16, block.begin() + start, apply);
+            start += 16;
+            util::transform_out(dct_recon.begin() + 16, dct_recon.begin() + 24, block.begin() + start, apply);
+            start += 16;
+            util::transform_out(dct_recon.begin() + 24, dct_recon.begin() + 32, block.begin() + start, apply);
+            start += 16;
+            util::transform_out(dct_recon.begin() + 32, dct_recon.begin() + 40, block.begin() + start, apply);
+            start += 16;
+            util::transform_out(dct_recon.begin() + 40, dct_recon.begin() + 48, block.begin() + start, apply);
+            start += 16;
+            util::transform_out(dct_recon.begin() + 48, dct_recon.begin() + 56, block.begin() + start, apply);
+            start += 16;
+            util::transform_out(dct_recon.begin() + 56, dct_recon.begin() + 64, block.begin() + start, apply);
+        } else if (block_i == 4) {
+            //cb
+        } else if (block_i == 5) {
+            //cr
+        }
+    }
+
+    context.past_intra_address = context.macroblock_address;
 
     return block;
 }

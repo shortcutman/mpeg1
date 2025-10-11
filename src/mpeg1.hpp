@@ -8,6 +8,7 @@
 #include "mpeg1.consts.hpp"
 
 #include "bitspan.hpp"
+#include "colour.hpp"
 
 #include <cstdint>
 #include <span>
@@ -38,6 +39,7 @@ namespace mpeg1 {
     struct PictureHeader {
         uint16_t temporal_reference;
         CodingType coding_type;
+        uint16_t vbv_delay;
         
         bool full_pel_forward_vector;
         uint8_t forward_f_code;
@@ -61,12 +63,33 @@ namespace mpeg1 {
         bool intra;
     };
 
+    struct BlockContext {
+        SequenceHeader sequence;
+        PictureHeader picture;
+        SliceHeader slice;
+        Macroblock macroblock;
+
+        int macroblock_address;
+
+        int dct_dc_y_past = 1024;
+        int dct_dc_cb_past = 1024;
+        int dct_dc_cr_past = 1024;
+
+        int past_intra_address = -2;
+
+        std::array<int, 640*266> y;
+        std::array<int, 640*266> cb;
+        std::array<int, 640*266> cr;
+    };
+
     SequenceHeader read_sequence_header(std::span<std::byte>& data);
     GroupOfPicturesHeader read_gop_header(std::span<std::byte>& data);
     PictureHeader read_picture_header(std::span<std::byte>& data);
 
     SliceHeader read_slice_header(util::bitspan& data);
     Macroblock read_macroblock(util::bitspan& data, CodingType coding_type);
+
+    std::array<image::Colour, 256> read_intra_blocks(util::bitspan& data, BlockContext& context);
 
     size_t calc_dct_zz_zero(size_t dc_size, size_t dc_differential);
 }

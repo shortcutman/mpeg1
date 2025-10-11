@@ -87,7 +87,7 @@ const VariableLengthCode<size_t> BLOCK_DCT_DC_SIZE_CHROMINANCE = {{
 
 struct DCTCoeff {
     int8_t run;
-    int8_t level;
+    int16_t level;
 
     auto operator<=>(const DCTCoeff&) const = default;
 };
