@@ -41,11 +41,13 @@ add_executable(danpg1_tests
     src/tests/mpegts.tests.cpp
     src/tests/mpeg1.tests.cpp
     src/tests/mpeg1.vlc.tests.cpp
+    src/tests/util.tests.cpp
 )
 target_link_libraries(
     danpg1_tests
     libdanpg1
     GTest::gtest_main
+    GTest::gmock
 )
 include(GoogleTest)
 gtest_discover_tests(danpg1_tests)
