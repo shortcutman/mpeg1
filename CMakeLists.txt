@@ -13,6 +13,7 @@ add_library(libdanpg1
     src/mpegts.cpp
     src/mpeg1.cpp
     src/mpeg1.consts.cpp
+    src/idct.cpp
 )
 target_include_directories(libdanpg1 INTERFACE src/)
 
