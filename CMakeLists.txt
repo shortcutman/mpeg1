@@ -10,6 +10,7 @@ add_compile_options(-Wall)
 
 add_library(libdanpg1
     src/bitspan.cpp
+    src/colour.cpp
     src/mpegts.cpp
     src/mpeg1.cpp
     src/mpeg1.consts.cpp
