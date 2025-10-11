@@ -1,12 +1,9 @@
-//
-//  idct.hpp
-//  libdanpg
-//
-//  Created by Daniel Burke on 2/8/2023.
-//
 
-#ifndef idct_hpp
-#define idct_hpp
+//------------------------------------------------------------------------------
+// idct.hpp
+//------------------------------------------------------------------------------
+
+#pragma once
 
 #include <array>
 
@@ -30,5 +27,3 @@ inline void loeffler_1d_idct_col(const std::array<float, 8*8>& du, std::array<in
 
 
 }
-
-#endif /* idct_hpp */
