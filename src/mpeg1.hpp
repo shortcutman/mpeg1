@@ -12,6 +12,7 @@
 
 #include <cstdint>
 #include <span>
+#include <vector>
 
 namespace mpeg1 {
     struct SequenceHeader {
@@ -79,9 +80,7 @@ namespace mpeg1 {
 
         int past_intra_address = -2;
 
-        std::array<int, 640*266> y;
-        std::array<int, 640*266> cb;
-        std::array<int, 640*266> cr;
+        std::vector<image::Colour> image;
     };
 
     SequenceHeader read_sequence_header(std::span<std::byte>& data);
