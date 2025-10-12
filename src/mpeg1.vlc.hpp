@@ -65,7 +65,8 @@ const VariableLengthCode<size_t> BLOCK_DCT_DC_SIZE_LUMINANCE = {{
     {0b100, 3, 0},
     {0b00, 2, 1},
     {0b01, 2, 2},
-    {0b101, 3, 4},
+    {0b101, 3, 3},
+    {0b110, 3, 4},
     {0b1110, 4, 5},
     {0b11110, 5, 6},
     {0b111110, 6, 7},
@@ -94,7 +95,7 @@ struct DCTCoeff {
 
 const VariableLengthCode<DCTCoeff> BLOCK_DCT_COEFF = {{
 // Table B.5c Variable length codes for dct_coeff_first and dct_coeff_next
-    {0b1, 1, {0, 1}},
+    // {0b1, 1, {0, 1}}, ONLY FOR NON-INTRA BLOCK
 
     {0b11, 2, {0, 1}},
 
