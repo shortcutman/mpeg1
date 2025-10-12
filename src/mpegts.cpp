@@ -207,31 +207,57 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
         data = data.subspan(188);
     }
 
-    for (size_t i = 0; i < video_es.size(); i++) {
-        if (video_es[i] == std::byte{0} && video_es[i + 1] == std::byte{0} && video_es[i + 2] == std::byte{1} && video_es[i+3] == std::byte{0xb3}) {
-            std::println("Found sequence header code at byte no. {}", i);
-
-            mpeg1::BlockContext context;
-
-            auto bytes = std::span<std::byte>(video_es.begin() + i, video_es.begin() + i + 1000);
-            context.sequence = mpeg1::read_sequence_header(bytes);
-            mpeg1::read_gop_header(bytes);
-            context.picture = mpeg1::read_picture_header(bytes);
-
-            util::bitspan bits(bytes);
-            context.slice = mpeg1::read_slice_header(bits);
-            context.macroblock = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
-            context.macroblock_address = (context.slice.vertical_position - 1) * 40 - 1 + context.macroblock.address_increment;
-
-            auto block = mpeg1::read_intra_blocks(bits, context);
-            image::writeOutPPM("/tmp/danpg1/out.ppm", 16, 16, block);
-
-            break;
-        }
-    }
-
-    std::println("Packets found");
+    std::println("TS Packets found");
     for (auto& v : pid_map) {
         std::println("\tPID: {}, Count: {}", v.first, v.second);
     }
+
+    bool first_pic = false;
+    size_t slices = 0;
+    mpeg1::BlockContext context;
+
+    auto* start = &video_es[0];
+    std::println("Assembling first picture from video es byte {}", std::to_integer<int>(*start));
+    for (size_t i = 0; i < video_es.size(); i++) {
+        if (video_es[i] == std::byte{0} && video_es[i + 1] == std::byte{0} && video_es[i + 2] == std::byte{1}) {
+            uint32_t code = 0;
+            code |= 0x0100 | std::to_integer<uint32_t>(video_es[i + 3]);
+            auto bytes = std::span<std::byte>(video_es.begin() + i, video_es.end());
+            const auto bytes_size = bytes.size();
+
+            if (code == mpeg1::start_code::sequence) {
+                std::println("\tFound sequence header code at byte no. {}", i);
+                context.sequence = mpeg1::read_sequence_header(bytes);
+                i += bytes_size - bytes.size() - 1;
+            } else if (code == mpeg1::start_code::group_of_pictures) {
+                std::println("\tFound GOP header code at byte no. {}", i);
+                mpeg1::read_gop_header(bytes);
+                i += bytes_size - bytes.size() - 1;
+            } else if (code == mpeg1::start_code::picture) {
+                std::println("\tFound picture header code at byte no. {}", i);
+                context.picture = mpeg1::read_picture_header(bytes);
+                i += bytes_size - bytes.size() - 1;
+
+                if (first_pic) {
+                    break;
+                } else {
+                    first_pic = true;
+                }
+            } else if (code >= mpeg1::start_code::slice_minimum &&
+                        code <= mpeg1::start_code::slice_maximum) {
+                slices++;
+                
+                util::bitspan bits(bytes);
+                context.slice = mpeg1::read_slice_header(bits);
+                std::println("\tFound slice header code at byte no. {}, vert pos {}", i, context.slice.vertical_position);
+
+                context.macroblock = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
+                context.macroblock_address = (context.slice.vertical_position - 1) * context.mb_width() - 1 + context.macroblock.address_increment;
+
+                auto block = mpeg1::read_intra_blocks(bits, context);
+                image::writeOutPPM("/tmp/danpg1/out.ppm", 16, 16, block);
+            }
+        }
+    }
+    std::println("First picture contains {} slices.", slices);
 }
