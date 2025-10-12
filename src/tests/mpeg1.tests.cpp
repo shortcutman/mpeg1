@@ -130,3 +130,22 @@ TEST(MPEG1, calc_dct_zz_zero) {
     EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b110), 6);
     EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b111), 7);
 }
+
+TEST(MPEG1, read_intra_macrobblock) {
+    auto data = make_bytes(
+	0x00, 0x00, 0x01, 0x01, 0x23, 0xf8, 0x85, 0x29,
+	0x48, 0x8b);
+
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    mpeg1::read_slice_header(bits); //align test data
+    mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
+    mpeg1::BlockContext context;
+    auto macroblock = mpeg1::read_intra_blocks(bits, context);
+
+    for (size_t i = 0; i < macroblock.size(); i++) {
+        ASSERT_EQ(macroblock[i].r, 1) << "Index: " << i;
+        ASSERT_EQ(macroblock[i].g, 1);
+        ASSERT_EQ(macroblock[i].b, 1);
+    }
+}
