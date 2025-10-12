@@ -7,6 +7,8 @@
 
 #include "bitspan.hpp"
 
+#include "mpeg1.hpp"
+
 #include <map>
 #include <optional>
 #include <print>
@@ -203,6 +205,29 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
         }
 
         data = data.subspan(188);
+    }
+
+    for (size_t i = 0; i < video_es.size(); i++) {
+        if (video_es[i] == std::byte{0} && video_es[i + 1] == std::byte{0} && video_es[i + 2] == std::byte{1} && video_es[i+3] == std::byte{0xb3}) {
+            std::println("Found sequence header code at byte no. {}", i);
+
+            mpeg1::BlockContext context;
+
+            auto bytes = std::span<std::byte>(video_es.begin() + i, video_es.begin() + i + 1000);
+            context.sequence = mpeg1::read_sequence_header(bytes);
+            mpeg1::read_gop_header(bytes);
+            context.picture = mpeg1::read_picture_header(bytes);
+
+            util::bitspan bits(bytes);
+            context.slice = mpeg1::read_slice_header(bits);
+            context.macroblock = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
+            context.macroblock_address = (context.slice.vertical_position - 1) * 40 - 1 + context.macroblock.address_increment;
+
+            auto block = mpeg1::read_intra_blocks(bits, context);
+            image::writeOutPPM("/tmp/danpg1/out.ppm", 16, 16, block);
+
+            break;
+        }
     }
 
     std::println("Packets found");
