@@ -12,17 +12,17 @@ namespace image {
 
 struct Colour {
     union {
-        int r;
+        int r = 255;
         int y;
     };
     
     union {
-        int g;
+        int g = 255;
         int cb;
     };
     
     union {
-        int b;
+        int b = 255;
         int cr;
     };
     
