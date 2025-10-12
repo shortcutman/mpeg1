@@ -69,6 +69,8 @@ namespace mpeg1 {
         SliceHeader slice;
         Macroblock macroblock;
 
+        size_t mb_width() const { return this->sequence.horizontal_size / 16; }
+
         int macroblock_address;
 
         int dct_dc_y_past = 1024;
