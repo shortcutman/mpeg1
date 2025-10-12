@@ -215,10 +215,14 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
 
         if (dct_dc_size > 0) {
             size_t dct_dc_differential = data.read_bits_be(dct_dc_size);
-            dct_recon[0] = calc_dct_zz_zero(dct_dc_size, dct_dc_differential) * 8;
+            dct_recon[0] = calc_dct_zz_zero(dct_dc_size, dct_dc_differential);
         }
-
-        dct_recon[0] = dct_dc_past + dct_recon[0];
+        dct_recon[0] *= 8;
+        if (context.macroblock_address - context.past_intra_address > 1) {
+            dct_recon[0] = (128 * 8) + dct_recon[0];
+        } else {
+            dct_recon[0] = dct_dc_past + dct_recon[0];
+        }
         dct_dc_past = dct_recon[0];
 
         size_t dct_i = 0;
