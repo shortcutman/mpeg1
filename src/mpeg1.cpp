@@ -197,7 +197,7 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
         std::array<int, 64> dct_recon;
         std::fill(dct_recon.begin(), dct_recon.end(), 0);
         int dct_dc_size = 0;
-        int& dct_dc_past = context.dct_dc_y_past;
+        int* dct_dc_past = &context.dct_dc_y_past;
 
         if (block_i < 4) {
             // dct_dc_size_luminance
@@ -207,9 +207,9 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
             dct_dc_size = mpeg1::BLOCK_DCT_DC_SIZE_CHROMINANCE.next_symbol(data);
 
             if (block_i == 4) {
-                dct_dc_past = context.dct_dc_cb_past;
+                dct_dc_past = &context.dct_dc_cb_past;
             } else if (block_i == 5) {
-                dct_dc_past = context.dct_dc_cr_past;
+                dct_dc_past = &context.dct_dc_cr_past;
             }
         }
 
@@ -222,9 +222,9 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
             (block_i == 0 || block_i == 4 || block_i == 5)) {
             dct_recon[0] = (128 * 8) + dct_recon[0];
         } else {
-            dct_recon[0] = dct_dc_past + dct_recon[0];
+            dct_recon[0] = *dct_dc_past + dct_recon[0];
         }
-        dct_dc_past = dct_recon[0];
+        *dct_dc_past = dct_recon[0];
 
         size_t dct_i = 0;
         while (data.peek_bits_be(2) != 0b10) {
