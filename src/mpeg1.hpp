@@ -72,6 +72,7 @@ namespace mpeg1 {
 
         size_t mb_width() const { return this->sequence.horizontal_size / 16; }
 
+        int previous_macroblock_address;
         int macroblock_address;
 
         int dct_dc_y_past = 1024;
