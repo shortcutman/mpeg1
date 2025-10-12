@@ -302,6 +302,9 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
                 context.slice = mpeg1::read_slice_header(bits);
                 context.previous_macroblock_address = (context.slice.vertical_position - 1) * context.mb_width() - 1;
                 context.past_intra_address = -2;
+                context.dct_dc_y_past = 1024;
+                context.dct_dc_cb_past = 1024;
+                context.dct_dc_cr_past = 1024;
                 std::println("\tFound slice header code at byte no. {}, vert pos {}", i, context.slice.vertical_position);
 
                 while (!peak_code(bits)) {
