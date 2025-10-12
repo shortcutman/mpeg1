@@ -9,6 +9,7 @@
 
 #include "mpeg1.hpp"
 
+#include <format>
 #include <map>
 #include <optional>
 #include <print>
@@ -147,6 +148,43 @@ pg1::PMT pg1::read_pmt_pkt(std::span<std::byte>& data) {
     return pmt;
 }
 
+namespace {
+    std::optional<uint32_t> get_code(const std::span<std::byte>& data) {
+        if (data[0] == std::byte{0x00} &&
+            data[1] == std::byte{0x00} &&
+            data[2] == std::byte{0x01}) {
+                uint32_t code = 0;
+                code |= 0x0100 | std::to_integer<uint32_t>(data[3]);
+                return code;
+        } else {
+            return std::nullopt;
+        }
+    }
+
+    bool peak_code(const util::bitspan& data) {
+        auto rd = data.peek_bits_be(24);
+        if (rd == 0x00000001) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void copy_mb_to_image(int addr, const std::array<image::Colour, 256>& block, std::vector<image::Colour>& image) {
+        const size_t span = 640;
+
+        // addr -= 1; //addr starts from 1
+        auto addrHorizontal = addr % 40;
+        auto addrVertical = addr / 40;
+        auto imageStartIt = image.begin() + addrHorizontal * 16 + addrVertical * 16 * span;
+        for (size_t i = 0; i < 16; i++) {
+            auto blockIt = block.begin() + i * 16;
+            auto imageIt = imageStartIt + i * span;
+            std::copy(blockIt, blockIt + 16, imageIt);
+        }
+    }
+}
+
 void pg1::loop_ts_data(std::span<std::byte>& data) {
     std::map<uint16_t, size_t> pid_map;
     std::optional<PAT> pat;
@@ -212,52 +250,69 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
         std::println("\tPID: {}, Count: {}", v.first, v.second);
     }
 
-    bool first_pic = false;
-    size_t slices = 0;
+    bool decode_pic = false;
+    size_t pictures = 0;
     mpeg1::BlockContext context;
 
     auto* start = &video_es[0];
     std::println("Assembling first picture from video es byte {}", std::to_integer<int>(*start));
     for (size_t i = 0; i < video_es.size(); i++) {
-        if (video_es[i] == std::byte{0} && video_es[i + 1] == std::byte{0} && video_es[i + 2] == std::byte{1}) {
-            uint32_t code = 0;
-            code |= 0x0100 | std::to_integer<uint32_t>(video_es[i + 3]);
-            auto bytes = std::span<std::byte>(video_es.begin() + i, video_es.end());
+        auto bytes = std::span<std::byte>(video_es.begin() + i, video_es.end());
+        auto code = get_code(bytes);
+        if (code) {
             const auto bytes_size = bytes.size();
 
-            if (code == mpeg1::start_code::sequence) {
+            if (*code == mpeg1::start_code::sequence) {
                 std::println("\tFound sequence header code at byte no. {}", i);
                 context.sequence = mpeg1::read_sequence_header(bytes);
                 i += bytes_size - bytes.size() - 1;
-            } else if (code == mpeg1::start_code::group_of_pictures) {
+
+                context.image.resize(context.sequence.horizontal_size * context.sequence.vertical_size);
+            } else if (*code == mpeg1::start_code::group_of_pictures) {
                 std::println("\tFound GOP header code at byte no. {}", i);
                 mpeg1::read_gop_header(bytes);
                 i += bytes_size - bytes.size() - 1;
-            } else if (code == mpeg1::start_code::picture) {
+            } else if (*code == mpeg1::start_code::picture) {
                 std::println("\tFound picture header code at byte no. {}", i);
+
+                if (decode_pic) {
+                    image::writeOutPPM(std::format("/tmp/danpg1/img_{}.ppm", pictures),
+                                    context.sequence.horizontal_size,
+                                    context.sequence.vertical_size,
+                                    context.image);
+                }
+                pictures++;
+
                 context.picture = mpeg1::read_picture_header(bytes);
                 i += bytes_size - bytes.size() - 1;
 
-                if (first_pic) {
+                decode_pic = context.picture.coding_type == mpeg1::CodingType::IntraCoded;
+
+                if (pictures > 100) {
                     break;
-                } else {
-                    first_pic = true;
                 }
-            } else if (code >= mpeg1::start_code::slice_minimum &&
-                        code <= mpeg1::start_code::slice_maximum) {
-                slices++;
+            } else if (*code >= mpeg1::start_code::slice_minimum &&
+                        *code <= mpeg1::start_code::slice_maximum) {
+
+                if (!decode_pic) {
+                    continue;
+                }
                 
                 util::bitspan bits(bytes);
                 context.slice = mpeg1::read_slice_header(bits);
+                context.previous_macroblock_address = (context.slice.vertical_position - 1) * context.mb_width() - 1;
+                context.past_intra_address = -2;
                 std::println("\tFound slice header code at byte no. {}, vert pos {}", i, context.slice.vertical_position);
 
-                context.macroblock = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
-                context.macroblock_address = (context.slice.vertical_position - 1) * context.mb_width() - 1 + context.macroblock.address_increment;
+                while (!peak_code(bits)) {
+                    context.macroblock = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
+                    context.macroblock_address = context.previous_macroblock_address + context.macroblock.address_increment;
 
-                auto block = mpeg1::read_intra_blocks(bits, context);
-                image::writeOutPPM("/tmp/danpg1/out.ppm", 16, 16, block);
+                    auto block = mpeg1::read_intra_blocks(bits, context);
+                    copy_mb_to_image(context.macroblock_address, block, context.image);
+                    context.previous_macroblock_address = context.macroblock_address;
+                }
             }
         }
     }
-    std::println("First picture contains {} slices.", slices);
 }
