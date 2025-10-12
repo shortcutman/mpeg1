@@ -26,10 +26,10 @@ namespace util {
         size_t bits_read() const;
         size_t bytes_read() const;
 
-        uint32_t peek_bits_le(uint8_t bits);
+        uint32_t peek_bits_le(uint8_t bits) const;
         uint32_t read_bits_le(uint8_t bits);
 
-        uint32_t peek_bits_be(uint8_t bits);
+        uint32_t peek_bits_be(uint8_t bits) const;
         uint32_t read_bits_be(uint8_t bits);
 
         void round_to_next_byte();

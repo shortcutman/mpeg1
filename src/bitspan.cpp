@@ -32,7 +32,7 @@ size_t util::bitspan::bytes_read() const {
     return bytes;
 }
 
-uint32_t util::bitspan::peek_bits_le(uint8_t bits) {
+uint32_t util::bitspan::peek_bits_le(uint8_t bits) const {
     if (bits == 0) {
         return 0;
     }
@@ -54,7 +54,7 @@ uint32_t util::bitspan::peek_bits_le(uint8_t bits) {
     return val;
 }
 
-uint32_t util::bitspan::peek_bits_be(uint8_t bits) {
+uint32_t util::bitspan::peek_bits_be(uint8_t bits) const {
     if (bits == 0) {
         return 0;
     }
