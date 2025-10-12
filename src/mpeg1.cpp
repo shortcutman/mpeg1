@@ -262,6 +262,8 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
             }
         }
 
+        data.read_bits_be(2);
+
         image::idct(dct_recon);
 
         if (block_i < 4) {
