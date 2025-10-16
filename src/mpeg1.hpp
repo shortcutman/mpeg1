@@ -37,6 +37,8 @@ namespace mpeg1 {
         BidirectionalPredCoded
     };
 
+    std::string ct_to_string(CodingType type);
+
     struct PictureHeader {
         uint16_t temporal_reference;
         CodingType coding_type;

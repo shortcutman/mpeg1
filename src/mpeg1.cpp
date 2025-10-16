@@ -12,6 +12,19 @@
 
 #include <print>
 
+std::string mpeg1::ct_to_string(mpeg1::CodingType type) {
+    switch (type) {
+        case CodingType::IntraCoded:
+            return "IntraCoded";
+        case CodingType::PredictiveCoded:
+            return "PredictiveCoded";
+        case CodingType::BidirectionalPredCoded:
+            return "BidirectionalPredCoded";
+        default:
+            return "Unknown";
+    }
+}
+
 mpeg1::SequenceHeader mpeg1::read_sequence_header(std::span<std::byte>& data) {
     SequenceHeader header;
 
