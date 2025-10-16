@@ -162,12 +162,10 @@ namespace {
     }
 
     bool peak_code(const util::bitspan& data) {
-        auto rd = data.peek_bits_be(24);
-        if (rd == 0x00000001) {
-            return true;
-        } else {
-            return false;
-        }
+        auto unread_bytes_span = data.to_aligned_span();
+        return (unread_bytes_span[0] == std::byte{0x00} &&
+                unread_bytes_span[1] == std::byte{0x00} &&
+                unread_bytes_span[2] == std::byte{0x01});
     }
 
     void copy_mb_to_image(int addr, const std::array<image::Colour, 256>& block, std::vector<image::Colour>& image) {

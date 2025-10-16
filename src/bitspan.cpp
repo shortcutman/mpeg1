@@ -101,3 +101,8 @@ std::span<std::byte> util::bitspan::to_span() const {
     auto bytes_in = _bit_offset / 8;
     return std::span{&_data[bytes_in], _data.size() - bytes_in};
 }
+
+std::span<std::byte> util::bitspan::to_aligned_span() const {
+    auto bytes_in = this->bytes_read();
+    return std::span{&_data[bytes_in], _data.size() - bytes_in};
+}

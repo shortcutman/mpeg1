@@ -34,6 +34,7 @@ namespace util {
 
         void round_to_next_byte();
 
-        std::span<std::byte> to_span() const;
+        std::span<std::byte> to_span() const; //includes current byte if read into
+        std::span<std::byte> to_aligned_span() const; //from first unread byte
     };
 }
