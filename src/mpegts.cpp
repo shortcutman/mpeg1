@@ -248,12 +248,12 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
         std::println("\tPID: {}, Count: {}", v.first, v.second);
     }
 
+    std::println("Start video es decoding...");
+
     bool decode_pic = false;
     size_t pictures = 0;
     mpeg1::BlockContext context;
 
-    auto* start = &video_es[0];
-    std::println("Assembling first picture from video es byte {}", std::to_integer<int>(*start));
     for (size_t i = 0; i < video_es.size(); i++) {
         auto bytes = std::span<std::byte>(video_es.begin() + i, video_es.end());
         auto code = get_code(bytes);
@@ -267,11 +267,11 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
 
                 context.image.resize(context.sequence.horizontal_size * context.sequence.vertical_size);
             } else if (*code == mpeg1::start_code::group_of_pictures) {
-                std::println("\tFound GOP header code at byte no. {}", i);
+                std::println("\t\tFound GOP header code at byte no. {}", i);
                 mpeg1::read_gop_header(bytes);
                 i += bytes_size - bytes.size() - 1;
             } else if (*code == mpeg1::start_code::picture) {
-                std::println("\tFound picture header code at byte no. {}", i);
+                pictures++;
 
                 if (decode_pic) {
                     image::writeOutPPM(std::format("/tmp/danpg1/img_{}.ppm", pictures),
@@ -279,16 +279,12 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
                                     context.sequence.vertical_size,
                                     context.image);
                 }
-                pictures++;
 
                 context.picture = mpeg1::read_picture_header(bytes);
                 i += bytes_size - bytes.size() - 1;
 
                 decode_pic = context.picture.coding_type == mpeg1::CodingType::IntraCoded;
-
-                if (pictures > 100) {
-                    break;
-                }
+                std::println("\t\t\tFound picture header code at byte no. {}, pic num {} type {}", i, pictures, mpeg1::ct_to_string(context.picture.coding_type));
             } else if (*code >= mpeg1::start_code::slice_minimum &&
                         *code <= mpeg1::start_code::slice_maximum) {
 
@@ -303,7 +299,6 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
                 context.dct_dc_y_past = 1024;
                 context.dct_dc_cb_past = 1024;
                 context.dct_dc_cr_past = 1024;
-                std::println("\tFound slice header code at byte no. {}, vert pos {}", i, context.slice.vertical_position);
 
                 while (!peak_code(bits)) {
                     context.macroblock = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
