@@ -274,7 +274,7 @@ void pg1::loop_ts_data(std::span<std::byte>& data) {
                 pictures++;
 
                 if (decode_pic) {
-                    image::writeOutPPM(std::format("/tmp/danpg1/img_{}.ppm", pictures),
+                    image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}.ppm", pictures),
                                     context.sequence.horizontal_size,
                                     context.sequence.vertical_size,
                                     context.image);
