@@ -312,10 +312,11 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
             for (size_t y = 0; y < 8; y++) {
                 for (size_t x = 0; x < 8; x++) {
                     auto val = dct_recon[x + y * 8];
-                    block[x + y * 16].cb = val;
-                    block[x + 8 + y * 16].cb = val;
-                    block[128 + x + y * 16].cb = val;
-                    block[128 + x + 8 + y * 16].cb = val;
+
+                    block[x * 2 + y * 2 * 16].cb = val;
+                    block[x * 2 + 1 + y * 2 * 16].cb = val;
+                    block[x * 2 + y * 2 * 16 + 16].cb = val;
+                    block[x * 2 + 1 + y * 2 * 16 + 16].cb = val;
                 }
             }
         } else if (block_i == 5) {
@@ -323,10 +324,11 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
             for (size_t y = 0; y < 8; y++) {
                 for (size_t x = 0; x < 8; x++) {
                     auto val = dct_recon[x + y * 8];
-                    block[x + y * 16].cr = val;
-                    block[x + 8 + y * 16].cr = val;
-                    block[128 + x + y * 16].cr = val;
-                    block[128 + x + 8 + y * 16].cr = val;
+
+                    block[x * 2 + y * 2 * 16].cr = val;
+                    block[x * 2 + 1 + y * 2 * 16].cr = val;
+                    block[x * 2 + y * 2 * 16 + 16].cr = val;
+                    block[x * 2 + 1 + y * 2 * 16 + 16].cr = val;
                 }
             }
         }
