@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include "mpegts.hpp"
+#include "mpeg1_vid/decode.hpp"
 
 namespace {
 
@@ -36,5 +37,9 @@ int main(int argc, char** argv) {
     std::string input_filepath = argv[1];
     std::vector<std::byte> data = read_file(input_filepath);
     auto data_span = std::span{data};
-    pg1::loop_ts_data(data_span);
+
+    std::vector<std::byte> video_es;
+    pg1::loop_ts_data(data_span, video_es);
+
+    mpeg1::decode(video_es);
 }

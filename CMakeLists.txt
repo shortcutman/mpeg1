@@ -15,8 +15,9 @@ add_library(libdanpg1
     src/mpeg1.cpp
     src/mpeg1.consts.cpp
     src/idct.cpp
+    src/mpeg1_vid/decode.cpp
 )
-target_include_directories(libdanpg1 INTERFACE src/)
+target_include_directories(libdanpg1 PUBLIC src/)
 
 add_executable(danpg1
     src/main.cpp
