@@ -56,14 +56,17 @@ namespace mpeg1 {
         uint8_t quantizer_scale;
     };
 
-    struct Macroblock {
-        uint8_t address_increment = 0;
-
+    struct MacroblockType {
         bool quant;
         bool motion_forward;
         bool motion_backward;
         bool pattern;
         bool intra;
+    };
+
+    struct Macroblock {
+        uint8_t address_increment = 0;
+        MacroblockType type;
     };
 
     struct BlockContext {

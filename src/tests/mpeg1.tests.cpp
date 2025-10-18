@@ -103,11 +103,11 @@ TEST(MPEG1, read_block) {
     auto block = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
 
     EXPECT_EQ(block.address_increment, 1);
-    EXPECT_EQ(block.quant, false);
-    EXPECT_EQ(block.motion_forward, false);
-    EXPECT_EQ(block.motion_backward, false);
-    EXPECT_EQ(block.pattern, false);
-    EXPECT_EQ(block.intra, true);
+    EXPECT_EQ(block.type.quant, false);
+    EXPECT_EQ(block.type.motion_forward, false);
+    EXPECT_EQ(block.type.motion_backward, false);
+    EXPECT_EQ(block.type.pattern, false);
+    EXPECT_EQ(block.type.intra, true);
 }
 
 TEST(MPEG1, read_block_unhandled) {
@@ -149,3 +149,4 @@ TEST(MPEG1, read_intra_macrobblock) {
         ASSERT_EQ(macroblock[i].b, 1);
     }
 }
+

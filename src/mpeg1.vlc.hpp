@@ -7,6 +7,8 @@
 
 #include "vlc.hpp"
 
+#include "mpeg1.hpp"
+
 namespace mpeg1 {
 
 // Table B.1 Variable length codes for macroblock_address_increment
@@ -45,14 +47,6 @@ const VariableLengthCode<size_t> MACROBLOCK_ADDRESSING = {{
     {0b00000011001, 11, 32},
     {0b00000011000, 11, 33},
 }};
-
-struct MacroblockType {
-    bool quant;
-    bool motion_forward;
-    bool motion_backward;
-    bool pattern;
-    bool intra;
-};
 
 // Table 5.2b Variable length codes for macroblock_type in intra-coded pictures.
 const VariableLengthCode<MacroblockType> MACROBLOCK_TYPE_INTRA_VLC = {{
