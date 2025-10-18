@@ -13,25 +13,6 @@
 #include <span>
 
 namespace {
-    std::optional<uint32_t> get_code(const std::span<std::byte>& data) {
-        if (data[0] == std::byte{0x00} &&
-            data[1] == std::byte{0x00} &&
-            data[2] == std::byte{0x01}) {
-                uint32_t code = 0;
-                code |= 0x0100 | std::to_integer<uint32_t>(data[3]);
-                return code;
-        } else {
-            return std::nullopt;
-        }
-    }
-
-    bool peak_code(const util::bitspan& data) {
-        auto unread_bytes_span = data.to_aligned_span();
-        return (unread_bytes_span[0] == std::byte{0x00} &&
-                unread_bytes_span[1] == std::byte{0x00} &&
-                unread_bytes_span[2] == std::byte{0x01});
-    }
-
     void copy_mb_to_image(int addr, const std::array<image::Colour, 256>& block, std::vector<image::Colour>& image) {
         const size_t span = 640;
 
@@ -45,6 +26,25 @@ namespace {
             std::copy(blockIt, blockIt + 16, imageIt);
         }
     }
+}
+
+std::optional<uint32_t> mpeg1::get_code(const std::span<std::byte>& data) {
+    if (data[0] == std::byte{0x00} &&
+        data[1] == std::byte{0x00} &&
+        data[2] == std::byte{0x01}) {
+            uint32_t code = 0;
+            code |= 0x0100 | std::to_integer<uint8_t>(data[3]);
+            return code;
+    } else {
+        return std::nullopt;
+    }
+}
+
+bool mpeg1::peak_code(const util::bitspan& data) {
+    auto unread_bytes_span = data.to_aligned_span();
+    return (unread_bytes_span[0] == std::byte{0x00} &&
+            unread_bytes_span[1] == std::byte{0x00} &&
+            unread_bytes_span[2] == std::byte{0x01});
 }
 
 void mpeg1::decode(std::vector<std::byte>& data) {
