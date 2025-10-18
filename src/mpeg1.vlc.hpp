@@ -48,10 +48,21 @@ const VariableLengthCode<size_t> MACROBLOCK_ADDRESSING = {{
     {0b00000011000, 11, 33},
 }};
 
-// Table 5.2b Variable length codes for macroblock_type in intra-coded pictures.
+// Table 5.2a Variable length codes for macroblock_type in intra-coded pictures.
 const VariableLengthCode<MacroblockType> MACROBLOCK_TYPE_INTRA_VLC = {{
     {0b1, 1, {false, false, false, false, true}},
     {0b01, 2, {true, false, false, false, true}}
+}};
+
+// Table 5.2b Variable length codes for macroblock_type in predictive-coded pictures.
+const VariableLengthCode<MacroblockType> MACROBLOCK_TYPE_PRED_VLC = {{
+    {0b1, 1,        {false, true, false, true, false}},
+    {0b01, 2,       {false, false, false, true, false}},
+    {0b001, 3,      {false, true, false, false, false}},
+    {0b00011, 5,    {false, false, false, false, true}},
+    {0b00010, 5,    {true, true, false, true, false}},
+    {0b00001, 5,    {true, false, false, true, false}},
+    {0b000001, 6,   {true, false, false, false, true}}
 }};
 
 // Table B5.a Variable length codes for dct_dc_size_luminance
