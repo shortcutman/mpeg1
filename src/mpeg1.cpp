@@ -252,6 +252,8 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
                 if (next.level == 0x80 || next.level == 0x00) {
                     next.level <<= 8;
                     next.level |= data.read_bits_be(8);
+                } else if (next.level > 127) {
+                    next.level -= 256;
                 }
             } else {
                 next = mpeg1::BLOCK_DCT_COEFF.next_symbol(data);
