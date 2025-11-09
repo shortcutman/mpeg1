@@ -16,6 +16,7 @@ add_library(libdanpg1
     src/mpeg1.consts.cpp
     src/idct.cpp
     src/mpeg1_vid/decode.cpp
+    src/util.cpp
 )
 target_include_directories(libdanpg1 PUBLIC src/)
 
