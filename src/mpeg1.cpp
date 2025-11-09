@@ -173,10 +173,53 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, const PictureHeade
         }
         break;
 
+        case CodingType::PredictiveCoded: {
+            block.type = mpeg1::MACROBLOCK_TYPE_PRED_VLC.next_symbol(data);
+        }
+        break;
+
         default: {
             throw std::runtime_error("Unhandled CodingType for macroblock.");
         }
         break;
+    }
+
+    if (block.type.quant) {
+        block.quantizer_scale = data.read_bits_be(5);
+    }
+
+    if (block.type.motion_forward) {
+        auto forward_r_size = picture.forward_f_code - 1;
+        auto forward_f = 1 << forward_r_size;
+
+        block.motion_horizontal_forward_code = mpeg1::MACROBLOCK_MOTION_VECTOR_CODES.next_symbol(data);
+        if (forward_f != 1 && block.motion_horizontal_forward_code != 0) {
+            block.motion_horizontal_forward_r = data.read_bits_be(forward_r_size);
+        }
+
+        block.motion_vertical_forward_code = mpeg1::MACROBLOCK_MOTION_VECTOR_CODES.next_symbol(data);
+        if (forward_f != 1 && block.motion_vertical_forward_code != 0) {
+            block.motion_vertical_forward_r = data.read_bits_be(forward_r_size);
+        }
+    }
+
+    if (block.type.motion_backward) {
+        auto backward_r_size = picture.backward_f_code - 1;
+        auto backward_f = 1 << backward_r_size;
+
+        block.motion_horizontal_backward_code = mpeg1::MACROBLOCK_MOTION_VECTOR_CODES.next_symbol(data);
+        if (backward_f != 1 && block.motion_horizontal_backward_code != 0) {
+            block.motion_horizontal_backward_r = data.read_bits_be(backward_r_size);
+        }
+
+        block.motion_vertical_backward_code = mpeg1::MACROBLOCK_MOTION_VECTOR_CODES.next_symbol(data);
+        if (backward_f != 1 && block.motion_vertical_backward_code != 0) {
+            block.motion_vertical_backward_r = data.read_bits_be(backward_r_size);
+        }
+    }
+
+    if (block.type.pattern) {
+        block.coded_block_pattern = mpeg1::MACROBLOCK_CODED_BLOCK_PATTERN.next_symbol(data);
     }
 
     return block;

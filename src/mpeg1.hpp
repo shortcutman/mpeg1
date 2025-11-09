@@ -67,6 +67,20 @@ namespace mpeg1 {
     struct Macroblock {
         uint8_t address_increment = 0;
         MacroblockType type;
+
+        uint8_t quantizer_scale = 0;
+        
+        int8_t motion_horizontal_forward_code = 0;
+        uint8_t motion_horizontal_forward_r = 0;
+        int8_t motion_vertical_forward_code = 0;
+        uint8_t motion_vertical_forward_r = 0;
+
+        int8_t motion_horizontal_backward_code = 0;
+        uint8_t motion_horizontal_backward_r = 0;
+        int8_t motion_vertical_backward_code = 0;
+        uint8_t motion_vertical_backward_r = 0;
+
+        int8_t coded_block_pattern = 0;
     };
 
     struct BlockContext {

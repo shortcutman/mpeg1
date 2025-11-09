@@ -111,7 +111,7 @@ TEST(MPEG1, read_block) {
     EXPECT_EQ(block.type.intra, true);
 }
 
-TEST(MPEG1, read_macroblock) {
+TEST(MPEG1, read_intraframe_intra_macroblock_header) {
     auto data = make_bytes(0x23, 0xf8, 0x85);
     auto span = std::span<std::byte>(data);
     auto bits = util::bitspan(span);
@@ -128,14 +128,41 @@ TEST(MPEG1, read_macroblock) {
     EXPECT_EQ(macroblock.type.intra, true);
 }
 
+TEST(MPEG1, read_predframe_intra_macroblock_header) {
+    auto data = make_bytes(0x22, 0x70, 0x10);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    bits.read_bits_be(6);
+
+    mpeg1::PictureHeader pic_header{
+        .coding_type = mpeg1::CodingType::PredictiveCoded,
+        .forward_f_code = 1
+    };
+    auto macroblock = mpeg1::read_macroblock(bits, pic_header);
+
+    EXPECT_EQ(macroblock.address_increment, 1);
+    EXPECT_EQ(macroblock.type.quant, false);
+    EXPECT_EQ(macroblock.type.motion_forward, true);
+    EXPECT_EQ(macroblock.type.motion_backward, false);
+    EXPECT_EQ(macroblock.type.pattern, false);
+    EXPECT_EQ(macroblock.type.intra, false);
+    EXPECT_EQ(macroblock.quantizer_scale, 0);
+    EXPECT_EQ(macroblock.motion_horizontal_forward_code, 0);
+    EXPECT_EQ(macroblock.motion_horizontal_forward_r, 0);
+    EXPECT_EQ(macroblock.motion_vertical_forward_code, 0);
+    EXPECT_EQ(macroblock.motion_vertical_forward_r, 0);
+    EXPECT_EQ(macroblock.motion_horizontal_backward_code, 0);
+    EXPECT_EQ(macroblock.motion_horizontal_backward_r, 0);
+    EXPECT_EQ(macroblock.motion_vertical_backward_code, 0);
+    EXPECT_EQ(macroblock.motion_vertical_backward_r, 0);
+    EXPECT_EQ(macroblock.coded_block_pattern, 0);
+}
+
 TEST(MPEG1, read_block_unhandled) {
     auto data = make_bytes(0x00, 0x00, 0x01, 0x01, 0x13, 0xf8, 0x00, 0x00);
     auto span = std::span<std::byte>(data);
     auto bits = util::bitspan(span);
     mpeg1::read_slice_header(bits); //align test data
-
-    mpeg1::PictureHeader pred_pic{ .coding_type = mpeg1::CodingType::PredictiveCoded };
-    EXPECT_THROW(mpeg1::read_macroblock(bits, pred_pic), std::runtime_error);
 
     mpeg1::PictureHeader bipred_pic{ .coding_type = mpeg1::CodingType::BidirectionalPredCoded };
     EXPECT_THROW(mpeg1::read_macroblock(bits, bipred_pic), std::runtime_error);
@@ -153,7 +180,7 @@ TEST(MPEG1, calc_dct_zz_zero) {
     EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b111), 7);
 }
 
-TEST(MPEG1, read_intra_macrobblock) {
+TEST(MPEG1, read_intra_macroblock_and_block_data) {
     auto data = make_bytes(
 	0x00, 0x00, 0x01, 0x01, 0x23, 0xf8, 0x85, 0x29,
 	0x48, 0x8b);
