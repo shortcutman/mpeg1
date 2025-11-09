@@ -106,9 +106,11 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                     context.macroblock = mpeg1::read_macroblock(bits, context.picture);
                     context.macroblock_address = context.previous_macroblock_address + context.macroblock.address_increment;
 
-                    auto block = mpeg1::read_intra_blocks(bits, context);
-                    copy_mb_to_image(context.macroblock_address, block, context.image);
-                    context.previous_macroblock_address = context.macroblock_address;
+                    if (context.macroblock.type.intra) {
+                        auto block = mpeg1::read_intra_blocks(bits, context);
+                        copy_mb_to_image(context.macroblock_address, block, context.image);
+                        context.previous_macroblock_address = context.macroblock_address;
+                    }
                 }
             }
         }
