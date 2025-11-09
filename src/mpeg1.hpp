@@ -94,7 +94,7 @@ namespace mpeg1 {
     PictureHeader read_picture_header(std::span<std::byte>& data);
 
     SliceHeader read_slice_header(util::bitspan& data);
-    Macroblock read_macroblock(util::bitspan& data, CodingType coding_type);
+    Macroblock read_macroblock(util::bitspan& data, const PictureHeader& picture);
 
     std::array<image::Colour, 256> read_intra_blocks(util::bitspan& data, BlockContext& context);
 

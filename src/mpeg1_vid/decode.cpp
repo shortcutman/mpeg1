@@ -103,7 +103,7 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 context.dct_dc_cr_past = 1024;
 
                 while (!peak_code(bits)) {
-                    context.macroblock = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
+                    context.macroblock = mpeg1::read_macroblock(bits, context.picture);
                     context.macroblock_address = context.previous_macroblock_address + context.macroblock.address_increment;
 
                     auto block = mpeg1::read_intra_blocks(bits, context);

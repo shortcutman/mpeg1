@@ -153,7 +153,7 @@ mpeg1::SliceHeader mpeg1::read_slice_header(util::bitspan& data) {
     return header;
 }
 
-mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, CodingType coding_type) {
+mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, const PictureHeader& picture) {
     Macroblock block;
 
     while (data.peek_bits_be(11) == 0x00f) {
@@ -167,7 +167,7 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, CodingType coding_
 
     block.address_increment = mpeg1::MACROBLOCK_ADDRESSING.next_symbol(data);
 
-    switch (coding_type) {
+    switch (picture.coding_type) {
         case CodingType::IntraCoded: {
             block.type = mpeg1::MACROBLOCK_TYPE_INTRA_VLC.next_symbol(data);
         }

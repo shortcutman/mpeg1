@@ -100,7 +100,8 @@ TEST(MPEG1, read_block) {
     auto span = std::span<std::byte>(data);
     auto bits = util::bitspan(span);
     mpeg1::read_slice_header(bits); //align test data
-    auto block = mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
+    mpeg1::PictureHeader pic_header{ .coding_type = mpeg1::CodingType::IntraCoded };
+    auto block = mpeg1::read_macroblock(bits, pic_header);
 
     EXPECT_EQ(block.address_increment, 1);
     EXPECT_EQ(block.type.quant, false);
@@ -110,13 +111,34 @@ TEST(MPEG1, read_block) {
     EXPECT_EQ(block.type.intra, true);
 }
 
+TEST(MPEG1, read_macroblock) {
+    auto data = make_bytes(0x23, 0xf8, 0x85);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    bits.read_bits_be(6);
+
+    mpeg1::PictureHeader pic_header{ .coding_type = mpeg1::CodingType::IntraCoded };
+    auto macroblock = mpeg1::read_macroblock(bits, pic_header);
+
+    EXPECT_EQ(macroblock.address_increment, 1);
+    EXPECT_EQ(macroblock.type.quant, false);
+    EXPECT_EQ(macroblock.type.motion_forward, false);
+    EXPECT_EQ(macroblock.type.motion_backward, false);
+    EXPECT_EQ(macroblock.type.pattern, false);
+    EXPECT_EQ(macroblock.type.intra, true);
+}
+
 TEST(MPEG1, read_block_unhandled) {
     auto data = make_bytes(0x00, 0x00, 0x01, 0x01, 0x13, 0xf8, 0x00, 0x00);
     auto span = std::span<std::byte>(data);
     auto bits = util::bitspan(span);
     mpeg1::read_slice_header(bits); //align test data
-    EXPECT_THROW(mpeg1::read_macroblock(bits, mpeg1::CodingType::PredictiveCoded), std::runtime_error);
-    EXPECT_THROW(mpeg1::read_macroblock(bits, mpeg1::CodingType::BidirectionalPredCoded), std::runtime_error);
+
+    mpeg1::PictureHeader pred_pic{ .coding_type = mpeg1::CodingType::PredictiveCoded };
+    EXPECT_THROW(mpeg1::read_macroblock(bits, pred_pic), std::runtime_error);
+
+    mpeg1::PictureHeader bipred_pic{ .coding_type = mpeg1::CodingType::BidirectionalPredCoded };
+    EXPECT_THROW(mpeg1::read_macroblock(bits, bipred_pic), std::runtime_error);
 }
 
 TEST(MPEG1, calc_dct_zz_zero) {
@@ -139,7 +161,9 @@ TEST(MPEG1, read_intra_macrobblock) {
     auto span = std::span<std::byte>(data);
     auto bits = util::bitspan(span);
     mpeg1::read_slice_header(bits); //align test data
-    mpeg1::read_macroblock(bits, mpeg1::CodingType::IntraCoded);
+    
+    mpeg1::PictureHeader pic_header{ .coding_type = mpeg1::CodingType::IntraCoded };
+    mpeg1::read_macroblock(bits, pic_header);
     mpeg1::BlockContext context;
     auto macroblock = mpeg1::read_intra_blocks(bits, context);
 
