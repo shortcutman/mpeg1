@@ -114,4 +114,6 @@ namespace mpeg1 {
 
     std::tuple<int, int> calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock);
     size_t calc_dct_zz_zero(size_t dc_size, size_t dc_differential);
+
+    bool check_cbp(int8_t coded_block_pattern, size_t index);
 }

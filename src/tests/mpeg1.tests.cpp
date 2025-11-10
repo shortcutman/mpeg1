@@ -196,6 +196,15 @@ TEST(MPEG1, calc_dct_zz_zero) {
     EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b111), 7);
 }
 
+TEST(MPEG1, check_cbp) {
+    EXPECT_EQ(mpeg1::check_cbp(60, 0), true);
+    EXPECT_EQ(mpeg1::check_cbp(60, 1), true);
+    EXPECT_EQ(mpeg1::check_cbp(60, 2), true);
+    EXPECT_EQ(mpeg1::check_cbp(60, 3), true);
+    EXPECT_EQ(mpeg1::check_cbp(60, 4), false);
+    EXPECT_EQ(mpeg1::check_cbp(60, 5), false);
+}
+
 TEST(MPEG1, read_intra_macroblock_and_block_data) {
     auto data = make_bytes(
 	0x00, 0x00, 0x01, 0x01, 0x23, 0xf8, 0x85, 0x29,

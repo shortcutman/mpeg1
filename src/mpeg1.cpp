@@ -467,3 +467,7 @@ size_t mpeg1::calc_dct_zz_zero(size_t dc_size, size_t dc_differential) {
         return ((-1) << (dc_size)) | (dc_differential + 1);
     }
 }
+
+bool mpeg1::check_cbp(int8_t coded_block_pattern, size_t index) {
+    return coded_block_pattern & (1 << (5 - index));
+}
