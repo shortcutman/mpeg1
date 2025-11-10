@@ -379,6 +379,87 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
     return block;
 }
 
+std::tuple<int, int> mpeg1::calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock) {
+    static auto recon_right_for_prev = 0;
+    static auto recon_down_for_prev = 0;
+
+    auto forward_r_size = picture.forward_f_code - 1;
+    auto forward_f = 1 << forward_r_size;
+
+    auto complement_horizontal_forward_r = 0;
+    auto complement_vertical_forward_r = 0;
+
+    if (forward_f == 1 || macroblock.motion_horizontal_forward_code == 0) {
+        complement_horizontal_forward_r = 0;
+    } else {
+        complement_horizontal_forward_r = forward_f - 1 - macroblock.motion_horizontal_forward_r;
+    }
+
+    if (forward_f == 1 || macroblock.motion_vertical_forward_code == 0) {
+        complement_vertical_forward_r = 0;
+    } else {
+        complement_vertical_forward_r = forward_f - 1 - macroblock.motion_vertical_forward_r;
+    }
+
+    auto right_little = macroblock.motion_horizontal_forward_code * forward_f;
+    auto right_big = 0;
+    if (right_little == 0) {
+        right_big = 0;
+    } else {
+        if (right_little > 0) {
+            right_little = right_little - complement_horizontal_forward_r;
+            right_big = right_little - (32 * forward_f);
+        } else {
+            right_little = right_little + complement_horizontal_forward_r;
+            right_big = right_little + (32 * forward_f);
+        }
+    }
+
+    auto down_little = macroblock.motion_vertical_forward_code * forward_f;
+    auto down_big = 0;
+    if (down_little == 0) {
+        down_big = 0;
+    } else {
+        if (down_little > 0) {
+            down_little = down_little - complement_vertical_forward_r;
+            down_big = down_little - (32 * forward_f);
+        } else {
+            down_little = down_little + complement_vertical_forward_r;
+            down_big = down_little + (32 * forward_f);
+        }
+    }
+
+    auto max = (16 * forward_f) - 1;
+    auto min = -16 * forward_f;
+
+    auto new_vector = recon_right_for_prev + right_little;
+    auto recon_right_for = 0;
+    if (new_vector <= max && new_vector >= min) {
+        recon_right_for = recon_right_for_prev + right_little;
+    } else {
+        recon_right_for = recon_right_for_prev + right_big;
+    }
+    recon_right_for_prev = recon_right_for;
+
+    if (picture.full_pel_forward_vector) {
+        recon_right_for = recon_right_for << 1;
+    }
+
+    new_vector = recon_down_for_prev + down_little;
+    auto recon_down_for = 0;
+    if (new_vector <= max && new_vector >= min) {
+        recon_down_for = recon_down_for_prev + down_little;
+    } else {
+        recon_down_for = recon_down_for_prev + down_big;
+    }
+    recon_down_for_prev = recon_down_for;
+    if (picture.full_pel_forward_vector) {
+        recon_right_for = recon_right_for << 1;
+    }
+
+    return std::make_tuple(recon_right_for, recon_down_for);
+}
+
 size_t mpeg1::calc_dct_zz_zero(size_t dc_size, size_t dc_differential) {
     if (dc_differential & (1 << (dc_size - 1))) {
         return dc_differential;

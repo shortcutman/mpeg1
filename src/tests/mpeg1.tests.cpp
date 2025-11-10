@@ -168,6 +168,22 @@ TEST(MPEG1, read_block_unhandled) {
     EXPECT_THROW(mpeg1::read_macroblock(bits, bipred_pic), std::runtime_error);
 }
 
+TEST(MPEG1, calc_motion_vectors_predictive1) {
+    mpeg1::PictureHeader pred_pic{
+        .forward_f_code = 0,
+        .full_pel_forward_vector = true
+    };
+
+    mpeg1::Macroblock block{
+        .motion_horizontal_forward_code = 0,
+        .motion_horizontal_forward_r = 0,
+        .motion_vertical_forward_code = 0,
+        .motion_vertical_forward_r = 0
+    };
+
+    EXPECT_EQ(mpeg1::calc_motion_vectors(pred_pic, block), std::make_tuple(0, 0));
+}
+
 TEST(MPEG1, calc_dct_zz_zero) {
     //From example on page 30 of ISO 11172-2:1993
     EXPECT_EQ(mpeg1::calc_dct_zz_zero(3, 0b000), -7);
