@@ -100,7 +100,8 @@ namespace mpeg1 {
 
         int past_intra_address = -2;
 
-        std::vector<image::Colour> image;
+        std::vector<image::Colour> last_predictive;
+        std::vector<image::Colour> current_image;
     };
 
     SequenceHeader read_sequence_header(std::span<std::byte>& data);

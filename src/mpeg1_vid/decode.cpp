@@ -26,6 +26,32 @@ namespace {
             std::copy(blockIt, blockIt + 16, imageIt);
         }
     }
+
+    std::array<image::Colour, 256> copy_block_mv_from_image(int addr, std::tuple<int, int> motion_vector, const std::vector<image::Colour>& source) {
+        const size_t span = 640;
+        std::array<image::Colour, 256> block;
+
+        auto right_for = std::get<0>(motion_vector) >> 1;
+        auto down_for = std::get<1>(motion_vector) >> 1;
+        auto right_half_for = std::get<0>(motion_vector) - 2 * right_for;
+        auto down_half_for = std::get<1>(motion_vector) - 2 * down_for;
+
+        auto addrHorizontal = addr % (span / 16);
+        auto addrVertical = addr / (span / 16);
+
+        //implement copy of pels as per bottom of page 35
+        if (!right_half_for && !down_half_for) {
+            auto sourceStartIt = source.begin() + addrHorizontal * 16 + down_for + addrVertical * 16 * span + right_for;
+            for (size_t i = 0; i < 16; i++) {
+                auto sourceIt = sourceStartIt + i * span;
+                std::copy(sourceIt, sourceIt + 16, block.begin() + i * 16);
+            }
+        } else {
+            throw std::runtime_error("Unimplemented motion vector copy");
+        }
+
+        return block;
+    }
 }
 
 std::optional<uint32_t> mpeg1::get_code(const std::span<std::byte>& data) {
@@ -50,7 +76,6 @@ bool mpeg1::peak_code(const util::bitspan& data) {
 void mpeg1::decode(std::vector<std::byte>& data) {
     std::println("Start video es decoding...");
 
-    bool decode_pic = false;
     size_t pictures = 0;
     mpeg1::BlockContext context;
 
@@ -65,17 +90,20 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 context.sequence = mpeg1::read_sequence_header(bytes);
                 i += bytes_size - bytes.size() - 1;
 
-                context.image.resize(context.sequence.horizontal_size * context.sequence.vertical_size);
+                context.last_predictive.resize(context.sequence.horizontal_size * context.sequence.vertical_size);
+                context.current_image.resize(context.sequence.horizontal_size * context.sequence.vertical_size);
             } else if (*code == mpeg1::start_code::group_of_pictures) {
                 std::println("\t\tFound GOP header code at byte no. {}", i);
                 mpeg1::read_gop_header(bytes);
                 i += bytes_size - bytes.size() - 1;
             } else if (*code == mpeg1::start_code::picture) {
-                if (decode_pic) {
+                if (pictures != 0) {
                     image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}.ppm", pictures),
                                     context.sequence.horizontal_size,
                                     context.sequence.vertical_size,
-                                    context.image);
+                                    context.current_image);
+
+                    std::copy(context.current_image.begin(), context.current_image.end(), context.last_predictive.begin());
                 }
 
                 pictures++;
@@ -83,17 +111,10 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 context.picture = mpeg1::read_picture_header(bytes);
                 i += bytes_size - bytes.size() - 1;
 
-                // decode_pic = pictures == 104;
-                decode_pic = context.picture.coding_type == mpeg1::CodingType::IntraCoded;
-
                 std::println("\t\t\tFound picture header code at byte no. {}, pic num {} type {}", i, pictures, mpeg1::ct_to_string(context.picture.coding_type));
             } else if (*code >= mpeg1::start_code::slice_minimum &&
                         *code <= mpeg1::start_code::slice_maximum) {
 
-                if (!decode_pic) {
-                    continue;
-                }
-                
                 util::bitspan bits(bytes);
                 context.slice = mpeg1::read_slice_header(bits);
                 context.previous_macroblock_address = (context.slice.vertical_position - 1) * context.mb_width() - 1;
@@ -108,9 +129,14 @@ void mpeg1::decode(std::vector<std::byte>& data) {
 
                     if (context.macroblock.type.intra) {
                         auto block = mpeg1::read_intra_blocks(bits, context);
-                        copy_mb_to_image(context.macroblock_address, block, context.image);
-                        context.previous_macroblock_address = context.macroblock_address;
+                        copy_mb_to_image(context.macroblock_address, block, context.current_image);
+                    } else {
+                        auto mv = mpeg1::calc_motion_vectors(context.picture, context.macroblock);
+                        auto block = copy_block_mv_from_image(context.macroblock_address, mv, context.last_predictive);
+                        copy_mb_to_image(context.macroblock_address, block, context.current_image);
                     }
+
+                    context.previous_macroblock_address = context.macroblock_address;
                 }
             }
         }
