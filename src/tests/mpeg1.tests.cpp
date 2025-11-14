@@ -158,6 +158,33 @@ TEST(MPEG1, read_predframe_intra_macroblock_header) {
     EXPECT_EQ(macroblock.coded_block_pattern, 0);
 }
 
+TEST(MPEG1, read_predictive_macroblock) {
+    auto data = make_bytes(0x00, 0x00, 0x01, 0x01, 0x23, 0x97, 0x3a, 0x50);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+
+    auto pic_header = mpeg1::PictureHeader{
+        .coding_type = mpeg1::CodingType::PredictiveCoded,
+        .forward_f_code = 2
+    };
+
+    auto slice_header = mpeg1::read_slice_header(bits);
+    EXPECT_EQ(slice_header.vertical_position, 1);
+    EXPECT_EQ(slice_header.quantizer_scale, 4);
+
+    auto mb1 = mpeg1::read_macroblock(bits, pic_header);
+    EXPECT_EQ(mb1.address_increment, 1);
+    EXPECT_EQ(mb1.type.intra, false);
+    EXPECT_EQ(mb1.type.motion_backward, false);
+    EXPECT_EQ(mb1.type.motion_forward, true);
+    EXPECT_EQ(mb1.type.quant, false);
+    EXPECT_EQ(mb1.type.pattern, true);
+
+    EXPECT_EQ(mb1.motion_horizontal_forward_code, 0);
+    EXPECT_EQ(mb1.motion_vertical_forward_code, 2);
+    EXPECT_EQ(mb1.coded_block_pattern, 8);
+}
+
 TEST(MPEG1, read_block_unhandled) {
     auto data = make_bytes(0x00, 0x00, 0x01, 0x01, 0x13, 0xf8, 0x00, 0x00);
     auto span = std::span<std::byte>(data);
