@@ -66,7 +66,7 @@ const VariableLengthCode<MacroblockType> MACROBLOCK_TYPE_PRED_VLC = {{
 }};
 
 // Table 5.2a Variable length codes for coded_block_pattern.
-const VariableLengthCode<int> MACROBLOCK_CODED_BLOCK_PATTERN = {{
+const VariableLengthCode<uint32_t> MACROBLOCK_CODED_BLOCK_PATTERN = {{
     {0b111, 3, 60},
 
     {0b1101, 4, 4},

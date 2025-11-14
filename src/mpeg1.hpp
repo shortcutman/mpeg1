@@ -80,7 +80,7 @@ namespace mpeg1 {
         int8_t motion_vertical_backward_code = 0;
         uint8_t motion_vertical_backward_r = 0;
 
-        int8_t coded_block_pattern = 0;
+        uint32_t coded_block_pattern = 0;
     };
 
     struct BlockContext {
@@ -116,5 +116,5 @@ namespace mpeg1 {
     std::tuple<int, int> calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock);
     size_t calc_dct_zz_zero(size_t dc_size, size_t dc_differential);
 
-    bool check_cbp(int8_t coded_block_pattern, size_t index);
+    bool check_cbp(uint32_t coded_block_pattern, size_t index);
 }
