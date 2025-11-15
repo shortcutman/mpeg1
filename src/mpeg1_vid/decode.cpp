@@ -64,15 +64,15 @@ namespace {
             //     }
             // }
         } else {
-            // for (size_t y = 0; y < 16; y++) {
-            //     for (size_t x = 0; x < 16; x++) {
-            //         block[x + y*16] =
-            //             (source[addrHor + right_for + (addrVer + down_for) * span] +
-            //             source[addrHor + right_for + 1 + (addrVer + down_for) * span] +
-            //             source[addrHor + right_for + (addrVer + down_for + 1) * span] +
-            //             source[addrHor + right_for + 1 + (addrVer + down_for + 1) * span]) / 4;
-            //     }
-            // }
+            for (size_t y = 0; y < 16; y++) {
+                for (size_t x = 0; x < 16; x++) {
+                    block[x + y*16] =
+                        (source[addrHor + right_for + (addrVer + down_for) * span] +
+                        source[addrHor + right_for + 1 + (addrVer + down_for) * span] +
+                        source[addrHor + right_for + (addrVer + down_for + 1) * span] +
+                        source[addrHor + right_for + 1 + (addrVer + down_for + 1) * span]) / 4;
+                }
+            }
         }
 
         return block;
