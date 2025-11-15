@@ -38,6 +38,19 @@ TEST(MPEG1, read_sequence_header_fail_on_start_code) {
     EXPECT_THROW(mpeg1::read_sequence_header(span), std::runtime_error);
 }
 
+TEST(MPEG1, calculate_sizes) {
+    mpeg1::BlockContext context;
+    context.sequence = {
+        .horizontal_size = 640,
+        .vertical_size = 266
+    };
+
+    EXPECT_EQ(context.mb_width(), 40);
+    EXPECT_EQ(context.mb_height(), 17);
+    EXPECT_EQ(context.encoded_width(), 640);
+    EXPECT_EQ(context.encoded_height(), 272);
+}
+
 TEST(MPEG1, read_group_of_pictures_header) {
     auto data = make_bytes(0x00, 0x00, 0x01, 0xb8, 0x00, 0x08, 0x00, 0x40);
     auto span = std::span<std::byte>(data);

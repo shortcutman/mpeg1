@@ -89,7 +89,11 @@ namespace mpeg1 {
         SliceHeader slice;
         Macroblock macroblock;
 
-        size_t mb_width() const { return this->sequence.horizontal_size / 16; }
+        size_t mb_width() const { return (this->sequence.horizontal_size + 15) / 16; }
+        size_t mb_height() const { return (this->sequence.vertical_size + 15) / 16; }
+
+        size_t encoded_width() const { return mb_width() * 16; }
+        size_t encoded_height() const { return mb_height() * 16; }
 
         int previous_macroblock_address;
         int macroblock_address;
