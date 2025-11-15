@@ -230,6 +230,13 @@ TEST(MPEG1, check_cbp) {
     EXPECT_EQ(mpeg1::check_cbp(60, 3), true);
     EXPECT_EQ(mpeg1::check_cbp(60, 4), false);
     EXPECT_EQ(mpeg1::check_cbp(60, 5), false);
+
+    EXPECT_EQ(mpeg1::check_cbp(3, 0), false);
+    EXPECT_EQ(mpeg1::check_cbp(3, 1), false);
+    EXPECT_EQ(mpeg1::check_cbp(3, 2), false);
+    EXPECT_EQ(mpeg1::check_cbp(3, 3), false);
+    EXPECT_EQ(mpeg1::check_cbp(3, 4), true);
+    EXPECT_EQ(mpeg1::check_cbp(3, 5), true);
 }
 
 TEST(MPEG1, read_intra_macroblock_and_block_data) {
