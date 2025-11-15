@@ -56,13 +56,13 @@ namespace {
                 }
             }
         } else if (right_half_for && !down_half_for) {
-            // for (size_t y = 0; y < 16; y++) {
-            //     for (size_t x = 0; x < 16; x++) {
-            //         block[x + y*16] =
-            //             (source[addrHor + right_for + (addrVer + down_for) * span] +
-            //             source[addrHor + right_for + 1 + (addrVer + down_for) * span]) / 2;
-            //     }
-            // }
+            for (size_t y = 0; y < 16; y++) {
+                for (size_t x = 0; x < 16; x++) {
+                    block[x + y*16] =
+                        (source[addrHor + right_for + x + (addrVer + down_for + y) * span] +
+                        source[addrHor + right_for + x + 1 + (addrVer + down_for + y) * span]) / 2;
+                }
+            }
         } else {
             for (size_t y = 0; y < 16; y++) {
                 for (size_t x = 0; x < 16; x++) {
