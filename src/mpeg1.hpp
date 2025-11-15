@@ -113,6 +113,8 @@ namespace mpeg1 {
 
     std::array<image::Colour, 256> read_intra_blocks(util::bitspan& data, BlockContext& context);
 
+    std::array<int, 64> read_block(util::bitspan& data, BlockContext& context, size_t block_index);
+
     std::tuple<int, int> calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock);
     size_t calc_dct_zz_zero(size_t dc_size, size_t dc_differential);
 

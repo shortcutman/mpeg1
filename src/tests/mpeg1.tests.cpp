@@ -260,3 +260,41 @@ TEST(MPEG1, read_intra_macroblock_and_block_data) {
     }
 }
 
+TEST(MPEG1, read_predictive_macroblock_and_block_data) {
+    auto data = make_bytes(0x77, 0x7f, 0x4f, 0x54);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    bits.read_bits_be(1);
+    
+    mpeg1::BlockContext context;
+    context.picture = {
+        .coding_type = mpeg1::CodingType::PredictiveCoded,
+        .forward_f_code = 2
+    };
+    context.slice = {
+        .quantizer_scale = 4
+    };
+    context.previous_macroblock_address = 18;
+    context.macroblock = mpeg1::read_macroblock(bits, context.picture);
+
+    EXPECT_EQ(context.macroblock.type.intra, false);
+    EXPECT_EQ(context.macroblock.type.motion_backward, false);
+    EXPECT_EQ(context.macroblock.type.motion_forward, true);
+    EXPECT_EQ(context.macroblock.type.pattern, true);
+    EXPECT_EQ(context.macroblock.type.quant, false);
+    EXPECT_EQ(context.macroblock.motion_horizontal_forward_code, 0);
+    EXPECT_EQ(context.macroblock.motion_vertical_forward_code, -1);
+    EXPECT_EQ(context.macroblock.coded_block_pattern, 28);
+
+    std::array<int, 64> block;
+
+    block = mpeg1::read_block(bits, context, 1);
+    EXPECT_EQ(block[0], -7);
+
+    block = mpeg1::read_block(bits, context, 2);
+    EXPECT_EQ(block[0], 7);
+    EXPECT_EQ(block[8], -7);
+
+    block = mpeg1::read_block(bits, context, 3);
+    EXPECT_EQ(block[0], 7);
+}

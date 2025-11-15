@@ -379,6 +379,61 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
     return block;
 }
 
+std::array<int, 64> mpeg1::read_block(util::bitspan& data, BlockContext& context, size_t block_index) {    
+    std::array<int, 64> dct_recon;
+    std::fill(dct_recon.begin(), dct_recon.end(), 0);
+
+    size_t dct_i = 0;
+    do {
+        DCTCoeff next;
+
+        if (data.peek_bits_be(6) == 0b000001) {
+            //escape code
+            data.read_bits_be(6);
+            next.run = data.read_bits_be(6);
+
+            next.level = data.read_bits_be(8);
+            if (next.level == 0x80 || next.level == 0x00) {
+                next.level <<= 8;
+                next.level |= data.read_bits_be(8);
+            } else if (next.level > 127) {
+                next.level -= 256;
+            }
+        } else {
+            if (dct_i == 0) {
+                next = mpeg1::BLOCK_DCT_COEFF_FIRST.next_symbol(data);
+            } else {
+                next = mpeg1::BLOCK_DCT_COEFF_NEXT.next_symbol(data);
+            }
+            
+            auto sign = data.read_bits_be(1);
+            if (sign == 1) {
+                next.level *= -1;
+            }
+        }
+        
+        dct_i += next.run;
+        auto index = mpeg1::ZIGZAG_INDEX[dct_i];
+        dct_i++;
+
+        dct_recon[index] = (2 * next.level * context.slice.quantizer_scale * context.sequence.non_intra_quantizer_matrix[index]) / 16;
+
+        if ((dct_recon[index] & 1) == 0) {
+            dct_recon[index] -= sign(dct_recon[index]);
+        }
+
+        if (dct_recon[index] > 2047) {
+            dct_recon[index] = 2047;
+        } else if (dct_recon[index] < -2048) {
+            dct_recon[index] = -2048;
+        }
+    } while (data.peek_bits_be(2) != 0b10);
+
+    data.read_bits_be(2);
+
+    return dct_recon;
+}
+
 std::tuple<int, int> mpeg1::calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock) {
     static auto recon_right_for_prev = 0;
     static auto recon_down_for_prev = 0;
