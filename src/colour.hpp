@@ -31,6 +31,22 @@ struct Colour {
                this->g == b.g &&
                this->b == b.b;
     }
+
+    Colour operator/(const int& divisor) const {
+        return Colour{
+            .r = this->r / divisor,
+            .g = this->g / divisor,
+            .b = this->b / divisor
+        };
+    }
+
+    Colour operator+(const Colour& other) const {
+        return Colour{
+            .r = this->r + other.r,
+            .g = this->g + other.g,
+            .b = this->b + other.b,
+        };
+    }
     
     inline void setIndexColour(size_t index, int value) {
         switch (index) {
