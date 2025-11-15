@@ -18,7 +18,7 @@ util::ByteCatcha::ByteCatcha(util::bitspan& data)
 }
 
 util::ByteCatcha::~ByteCatcha() {
-    size_t bytes = std::max((_bits.bits_read() - _bits_read_start) / 8, (size_t)3);
+    size_t bytes = std::ceil((_bits.bits_read() - _bits_read_start) / 8.f);
     std::println("ByteCatcha, read {} bits at start, full bytes:", _bits_read_start % 8);
     std::for_each_n(_data.begin(), bytes, [] (auto b) {
         std::print("0x{:02x}, ", std::to_integer<int>(b));
