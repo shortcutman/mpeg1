@@ -30,24 +30,49 @@ namespace {
     std::array<image::Colour, 256> copy_block_mv_from_image(int addr, std::tuple<int, int> motion_vector, const std::vector<image::Colour>& source) {
         const size_t span = 640;
         std::array<image::Colour, 256> block;
+        std::fill_n(block.begin(), 256, image::Colour{});
 
         auto right_for = std::get<0>(motion_vector) >> 1;
         auto down_for = std::get<1>(motion_vector) >> 1;
         auto right_half_for = std::get<0>(motion_vector) - 2 * right_for;
         auto down_half_for = std::get<1>(motion_vector) - 2 * down_for;
 
-        auto addrHorizontal = addr % (span / 16);
-        auto addrVertical = addr / (span / 16);
+        auto addrHor = (addr % (span / 16)) * 16;
+        auto addrVer = (addr / (span / 16)) * 16;
 
         //implement copy of pels as per bottom of page 35
         if (!right_half_for && !down_half_for) {
-            auto sourceStartIt = source.begin() + addrHorizontal * 16 + down_for + addrVertical * 16 * span + right_for;
-            for (size_t i = 0; i < 16; i++) {
-                auto sourceIt = sourceStartIt + i * span;
-                std::copy(sourceIt, sourceIt + 16, block.begin() + i * 16);
+            for (size_t y = 0; y < 16; y++) {
+                for (size_t x = 0; x < 16; x++) {
+                    block[x + y*16] = source[addrHor + right_for + x + (addrVer + down_for + y) * span];
+                }
             }
+        } else if (!right_half_for && down_half_for) {
+            // for (size_t y = 0; y < 16; y++) {
+            //     for (size_t x = 0; x < 16; x++) {
+            //         block[x + y*16] =
+            //             (source[addrHor + right_for + (addrVer + down_for) * span] +
+            //             source[addrHor + right_for + (addrVer + down_for + 1) * span]) / 2;
+            //     }
+            // }
+        } else if (right_half_for && !down_half_for) {
+            // for (size_t y = 0; y < 16; y++) {
+            //     for (size_t x = 0; x < 16; x++) {
+            //         block[x + y*16] =
+            //             (source[addrHor + right_for + (addrVer + down_for) * span] +
+            //             source[addrHor + right_for + 1 + (addrVer + down_for) * span]) / 2;
+            //     }
+            // }
         } else {
-            throw std::runtime_error("Unimplemented motion vector copy");
+            // for (size_t y = 0; y < 16; y++) {
+            //     for (size_t x = 0; x < 16; x++) {
+            //         block[x + y*16] =
+            //             (source[addrHor + right_for + (addrVer + down_for) * span] +
+            //             source[addrHor + right_for + 1 + (addrVer + down_for) * span] +
+            //             source[addrHor + right_for + (addrVer + down_for + 1) * span] +
+            //             source[addrHor + right_for + 1 + (addrVer + down_for + 1) * span]) / 4;
+            //     }
+            // }
         }
 
         return block;
@@ -134,6 +159,16 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                         auto mv = mpeg1::calc_motion_vectors(context.picture, context.macroblock);
                         auto block = copy_block_mv_from_image(context.macroblock_address, mv, context.last_predictive);
                         copy_mb_to_image(context.macroblock_address, block, context.current_image);
+
+                        if (context.macroblock.type.pattern) {
+                            for (size_t i = 0; i < 6; i++) {
+                                if (!mpeg1::check_cbp(context.macroblock.coded_block_pattern, i)) {
+                                    continue;
+                                }
+
+                                mpeg1::read_block(bits, context, i);
+                            }
+                        }
                     }
 
                     context.previous_macroblock_address = context.macroblock_address;
