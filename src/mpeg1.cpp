@@ -287,7 +287,7 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
                     next.level -= 256;
                 }
             } else {
-                next = mpeg1::BLOCK_DCT_COEFF.next_symbol(data);
+                next = mpeg1::BLOCK_DCT_COEFF_NEXT.next_symbol(data);
                 auto sign = data.read_bits_be(1);
                 if (sign == 1) {
                     next.level *= -1;

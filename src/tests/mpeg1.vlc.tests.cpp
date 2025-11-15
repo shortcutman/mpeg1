@@ -11,7 +11,7 @@
 TEST(VariableLengthTables, validate_BLOCK_DCT_COEFF) {
     std::set<mpeg1::DCTCoeff> coeffs;
 
-    for (auto& c : mpeg1::BLOCK_DCT_COEFF.codes()) {
+    for (auto& c : mpeg1::BLOCK_DCT_COEFF_NEXT.codes()) {
         if (c.symbol == mpeg1::DCTCoeff{0, 1}) {
             continue;
         }
