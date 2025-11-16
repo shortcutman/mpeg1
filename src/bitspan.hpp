@@ -26,6 +26,8 @@ namespace util {
         size_t bits_read() const;
         size_t bytes_read() const;
 
+        size_t bits_remaining() const;
+
         uint32_t peek_bits_le(uint8_t bits) const;
         uint32_t read_bits_le(uint8_t bits);
 

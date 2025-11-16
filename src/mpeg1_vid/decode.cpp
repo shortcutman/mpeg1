@@ -150,7 +150,7 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 context.mv_right_for_prev = 0;
                 context.mv_down_for_prev = 0;
 
-                while (!peak_code(bits)) {
+                while (bits.bits_remaining() > 32 && !peak_code(bits)) {
                     context.macroblock = mpeg1::read_macroblock(bits, context.picture);
                     context.macroblock_address = context.previous_macroblock_address + context.macroblock.address_increment;
 
@@ -184,4 +184,10 @@ void mpeg1::decode(std::vector<std::byte>& data) {
             }
         }
     }
+
+    //this could be problematic, no check we got a complete image at end
+    image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(context.picture.coding_type)),
+                        context.encoded_width(),
+                        context.encoded_height(),
+                        context.current_image);
 }
