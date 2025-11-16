@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "mpeg1.consts.hpp"
+#include "mpeg1_vid/constants.hpp"
 
 #include "bitspan.hpp"
 #include "colour.hpp"

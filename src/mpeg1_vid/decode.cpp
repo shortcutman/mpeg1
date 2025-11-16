@@ -6,7 +6,7 @@
 #include "decode.hpp"
 
 #include "mpeg1.hpp"
-#include "mpeg1.consts.hpp"
+#include "constants.hpp"
 
 #include <cstddef>
 #include <print>

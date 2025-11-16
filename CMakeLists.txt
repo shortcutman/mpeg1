@@ -13,8 +13,9 @@ add_library(libdanpg1
     src/colour.cpp
     src/mpegts.cpp
     src/mpeg1.cpp
-    src/mpeg1.consts.cpp
+    
     src/idct.cpp
+    src/mpeg1_vid/constants.cpp
     src/mpeg1_vid/decode.cpp
     src/util.cpp
 )
