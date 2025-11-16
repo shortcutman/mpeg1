@@ -7,8 +7,6 @@
 
 #include "bitspan.hpp"
 
-#include "mpeg1.hpp"
-
 #include <format>
 #include <map>
 #include <optional>

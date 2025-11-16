@@ -12,10 +12,10 @@ add_library(libdanpg1
     src/bitspan.cpp
     src/colour.cpp
     src/mpegts.cpp
-    src/mpeg1.cpp
     src/idct.cpp
     src/mpeg1_vid/constants.cpp
     src/mpeg1_vid/decode.cpp
+    src/mpeg1_vid/mpeg1.cpp
     src/util.cpp
 )
 target_include_directories(libdanpg1 PUBLIC src/)
