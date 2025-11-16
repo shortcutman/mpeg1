@@ -103,6 +103,8 @@ namespace mpeg1 {
         int dct_dc_cr_past = 1024;
 
         int past_intra_address = -2;
+        int mv_right_for_prev = 0;
+        int mv_down_for_prev = 0;
 
         std::vector<image::Colour> last_predictive;
         std::vector<image::Colour> current_image;
@@ -119,7 +121,7 @@ namespace mpeg1 {
 
     std::array<int, 64> read_block(util::bitspan& data, BlockContext& context, size_t block_index);
 
-    std::tuple<int, int> calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock);
+    std::tuple<int, int> calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock, std::tuple<int, int> prev);
     size_t calc_dct_zz_zero(size_t dc_size, size_t dc_differential);
 
     bool check_cbp(uint32_t coded_block_pattern, size_t index);

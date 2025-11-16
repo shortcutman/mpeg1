@@ -221,7 +221,23 @@ TEST(MPEG1, calc_motion_vectors_predictive1) {
         .motion_vertical_forward_r = 0
     };
 
-    EXPECT_EQ(mpeg1::calc_motion_vectors(pred_pic, block), std::make_tuple(0, 0));
+    EXPECT_EQ(mpeg1::calc_motion_vectors(pred_pic, block, std::make_tuple(0, 0)), std::make_tuple(0, 0));
+}
+
+TEST(MPEG1, calc_motion_vectors_predictive2) {
+    mpeg1::PictureHeader pred_pic{
+        .forward_f_code = 2,
+        .full_pel_forward_vector = false
+    };
+
+    mpeg1::Macroblock block{
+        .motion_horizontal_forward_code = 1,
+        .motion_horizontal_forward_r = 0,
+        .motion_vertical_forward_code = -1,
+        .motion_vertical_forward_r = 0
+    };
+
+    EXPECT_EQ(mpeg1::calc_motion_vectors(pred_pic, block, std::make_tuple(1, 7)), std::make_tuple(2, 6));
 }
 
 TEST(MPEG1, calc_dct_zz_zero) {

@@ -434,9 +434,8 @@ std::array<int, 64> mpeg1::read_block(util::bitspan& data, BlockContext& context
     return dct_recon;
 }
 
-std::tuple<int, int> mpeg1::calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock) {
-    static auto recon_right_for_prev = 0;
-    static auto recon_down_for_prev = 0;
+std::tuple<int, int> mpeg1::calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock, std::tuple<int, int> prev) {
+    auto [recon_right_for_prev, recon_down_for_prev] = prev;
 
     auto forward_r_size = picture.forward_f_code - 1;
     auto forward_f = 1 << forward_r_size;
@@ -509,7 +508,7 @@ std::tuple<int, int> mpeg1::calc_motion_vectors(const PictureHeader& picture, co
     }
     recon_down_for_prev = recon_down_for;
     if (picture.full_pel_forward_vector) {
-        recon_right_for = recon_right_for << 1;
+        recon_down_for = recon_down_for << 1;
     }
 
     return std::make_tuple(recon_right_for, recon_down_for);

@@ -44,33 +44,33 @@ namespace {
         if (!right_half_for && !down_half_for) {
             for (size_t y = 0; y < 16; y++) {
                 for (size_t x = 0; x < 16; x++) {
-                    block[x + y*16] = source[addrHor + right_for + x + (addrVer + down_for + y) * span];
+                    block[x + y*16] = source.at(addrHor + right_for + x + (addrVer + down_for + y) * span);
                 }
             }
         } else if (!right_half_for && down_half_for) {
             for (size_t y = 0; y < 16; y++) {
                 for (size_t x = 0; x < 16; x++) {
                     block[x + y*16] =
-                        (source[addrHor + right_for + x + (addrVer + down_for + y) * span] +
-                        source[addrHor + right_for + x + (addrVer + down_for + y + 1) * span]) / 2;
+                        (source.at(addrHor + right_for + x + (addrVer + down_for + y) * span) +
+                        source.at(addrHor + right_for + x + (addrVer + down_for + y + 1) * span)) / 2;
                 }
             }
         } else if (right_half_for && !down_half_for) {
             for (size_t y = 0; y < 16; y++) {
                 for (size_t x = 0; x < 16; x++) {
                     block[x + y*16] =
-                        (source[addrHor + right_for + x + (addrVer + down_for + y) * span] +
-                        source[addrHor + right_for + x + 1 + (addrVer + down_for + y) * span]) / 2;
+                        (source.at(addrHor + right_for + x + (addrVer + down_for + y) * span) +
+                        source.at(addrHor + right_for + x + 1 + (addrVer + down_for + y) * span)) / 2;
                 }
             }
         } else {
             for (size_t y = 0; y < 16; y++) {
                 for (size_t x = 0; x < 16; x++) {
                     block[x + y*16] =
-                        (source[addrHor + right_for + x + (addrVer + down_for + y) * span] +
-                        source[addrHor + right_for + x + 1 + (addrVer + down_for + y) * span] +
-                        source[addrHor + right_for + x + (addrVer + down_for + y + 1) * span] +
-                        source[addrHor + right_for + x + 1 + (addrVer + down_for + y + 1) * span]) / 4;
+                        (source.at(addrHor + right_for + x + (addrVer + down_for + y) * span) +
+                        source.at(addrHor + right_for + x + 1 + (addrVer + down_for + y) * span) +
+                        source.at(addrHor + right_for + x + (addrVer + down_for + y + 1) * span) +
+                        source.at(addrHor + right_for + x + 1 + (addrVer + down_for + y + 1) * span)) / 4;
                 }
             }
         }
@@ -115,17 +115,17 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 context.sequence = mpeg1::read_sequence_header(bytes);
                 i += bytes_size - bytes.size() - 1;
 
-                context.last_predictive.resize(context.sequence.horizontal_size * context.sequence.vertical_size);
-                context.current_image.resize(context.sequence.horizontal_size * context.sequence.vertical_size);
+                context.last_predictive.resize(context.encoded_width() * context.encoded_height());
+                context.current_image.resize(context.encoded_width() * context.encoded_height());
             } else if (*code == mpeg1::start_code::group_of_pictures) {
                 std::println("\t\tFound GOP header code at byte no. {}", i);
                 mpeg1::read_gop_header(bytes);
                 i += bytes_size - bytes.size() - 1;
             } else if (*code == mpeg1::start_code::picture) {
                 if (pictures != 0) {
-                    image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}.ppm", pictures),
-                                    context.sequence.horizontal_size,
-                                    context.sequence.vertical_size,
+                    image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(context.picture.coding_type)),
+                                    context.encoded_width(),
+                                    context.encoded_height(),
                                     context.current_image);
 
                     std::copy(context.current_image.begin(), context.current_image.end(), context.last_predictive.begin());
@@ -147,27 +147,35 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 context.dct_dc_y_past = 1024;
                 context.dct_dc_cb_past = 1024;
                 context.dct_dc_cr_past = 1024;
+                context.mv_right_for_prev = 0;
+                context.mv_down_for_prev = 0;
 
                 while (!peak_code(bits)) {
                     context.macroblock = mpeg1::read_macroblock(bits, context.picture);
                     context.macroblock_address = context.previous_macroblock_address + context.macroblock.address_increment;
 
+                    if (!context.macroblock.type.motion_forward || context.macroblock.address_increment > 1) {
+                        context.mv_right_for_prev = 0;
+                        context.mv_down_for_prev = 0;
+                    }
+
                     if (context.macroblock.type.intra) {
                         auto block = mpeg1::read_intra_blocks(bits, context);
                         copy_mb_to_image(context.macroblock_address, block, context.current_image);
-                    } else {
-                        auto mv = mpeg1::calc_motion_vectors(context.picture, context.macroblock);
+                    } else if (context.macroblock.type.motion_forward) {
+                        auto mv = mpeg1::calc_motion_vectors(context.picture, context.macroblock, std::make_tuple(context.mv_right_for_prev, context.mv_down_for_prev));
+                        std::tie(context.mv_right_for_prev, context.mv_down_for_prev) = mv;
                         auto block = copy_block_mv_from_image(context.macroblock_address, mv, context.last_predictive);
                         copy_mb_to_image(context.macroblock_address, block, context.current_image);
+                    }
 
-                        if (context.macroblock.type.pattern) {
-                            for (size_t i = 0; i < 6; i++) {
-                                if (!mpeg1::check_cbp(context.macroblock.coded_block_pattern, i)) {
-                                    continue;
-                                }
-
-                                mpeg1::read_block(bits, context, i);
+                    if (context.macroblock.type.pattern) {
+                        for (size_t i = 0; i < 6; i++) {
+                            if (!mpeg1::check_cbp(context.macroblock.coded_block_pattern, i)) {
+                                continue;
                             }
+
+                            mpeg1::read_block(bits, context, i);
                         }
                     }
 
