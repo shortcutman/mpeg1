@@ -7,7 +7,7 @@
 
 #include "bitspan.hpp"
 #include "idct.hpp"
-#include "mpeg1.vlc.hpp"
+#include "mpeg1_vid/vlctables.hpp"
 #include "util.hpp"
 
 #include <print>

@@ -3,7 +3,7 @@
 // mpeg1.tests.cpp
 //------------------------------------------------------------------------------
 
-#include "mpeg1.vlc.hpp"
+#include "mpeg1_vid/vlctables.hpp"
 
 #include <set>
 #include <gtest/gtest.h>
