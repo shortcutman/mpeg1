@@ -124,6 +124,19 @@ TEST(MPEG1, read_block) {
     EXPECT_EQ(block.type.intra, true);
 }
 
+TEST(MPEG1, read_macroblock_escaped_increment) {
+    auto data = make_bytes(0x00, 0x83, 0x36);
+    auto span = std::span<std::byte>(data);
+    auto bits = util::bitspan(span);
+    bits.read_bits_be(1);
+    mpeg1::PictureHeader pic_header{
+        .coding_type = mpeg1::CodingType::PredictiveCoded,
+        .forward_f_code = 1
+    };
+    auto macroblock = mpeg1::read_macroblock(bits, pic_header);
+    EXPECT_EQ(macroblock.address_increment, 37);
+}
+
 TEST(MPEG1, read_intraframe_intra_macroblock_header) {
     auto data = make_bytes(0x23, 0xf8, 0x85);
     auto span = std::span<std::byte>(data);

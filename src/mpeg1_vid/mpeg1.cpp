@@ -165,7 +165,7 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, const PictureHeade
         block.address_increment += 33;
     }
 
-    block.address_increment = mpeg1::MACROBLOCK_ADDRESSING.next_symbol(data);
+    block.address_increment += mpeg1::MACROBLOCK_ADDRESSING.next_symbol(data);
 
     switch (picture.coding_type) {
         case CodingType::IntraCoded: {
