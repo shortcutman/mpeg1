@@ -70,10 +70,10 @@ namespace mpeg1 {
 
         uint8_t quantizer_scale = 0;
         
-        int8_t motion_horizontal_forward_code = 0;
-        uint8_t motion_horizontal_forward_r = 0;
-        int8_t motion_vertical_forward_code = 0;
-        uint8_t motion_vertical_forward_r = 0;
+        int32_t motion_horizontal_forward_code = 0;
+        uint32_t motion_horizontal_forward_r = 0;
+        int32_t motion_vertical_forward_code = 0;
+        uint32_t motion_vertical_forward_r = 0;
 
         int8_t motion_horizontal_backward_code = 0;
         uint8_t motion_horizontal_backward_r = 0;
