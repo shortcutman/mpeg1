@@ -64,6 +64,9 @@ namespace mpeg1 {
         bool intra;
     };
 
+    typedef std::array<image::Colour, 256> MacroblockData;
+    typedef std::array<int, 64> Block;
+
     struct Macroblock {
         uint8_t address_increment = 0;
         MacroblockType type;
@@ -125,4 +128,7 @@ namespace mpeg1 {
     size_t calc_dct_zz_zero(size_t dc_size, size_t dc_differential);
 
     bool check_cbp(uint32_t coded_block_pattern, size_t index);
+
+    void assign_to_cb(const Block& block, MacroblockData& macroblock);
+    void assign_to_cr(const Block& block, MacroblockData& macroblock);
 }

@@ -344,29 +344,9 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
             start += 16;
             util::transform_out(dct_recon.begin() + 56, dct_recon.begin() + 64, block.begin() + start, apply);
         } else if (block_i == 4) {
-            //cb
-            for (size_t y = 0; y < 8; y++) {
-                for (size_t x = 0; x < 8; x++) {
-                    auto val = dct_recon[x + y * 8];
-
-                    block[x * 2 + y * 2 * 16].cb = val;
-                    block[x * 2 + 1 + y * 2 * 16].cb = val;
-                    block[x * 2 + y * 2 * 16 + 16].cb = val;
-                    block[x * 2 + 1 + y * 2 * 16 + 16].cb = val;
-                }
-            }
+            assign_to_cb(dct_recon, block);
         } else if (block_i == 5) {
-            //cr
-            for (size_t y = 0; y < 8; y++) {
-                for (size_t x = 0; x < 8; x++) {
-                    auto val = dct_recon[x + y * 8];
-
-                    block[x * 2 + y * 2 * 16].cr = val;
-                    block[x * 2 + 1 + y * 2 * 16].cr = val;
-                    block[x * 2 + y * 2 * 16 + 16].cr = val;
-                    block[x * 2 + 1 + y * 2 * 16 + 16].cr = val;
-                }
-            }
+            assign_to_cr(dct_recon, block);
         }
     }
 
@@ -524,4 +504,30 @@ size_t mpeg1::calc_dct_zz_zero(size_t dc_size, size_t dc_differential) {
 
 bool mpeg1::check_cbp(uint32_t coded_block_pattern, size_t index) {
     return coded_block_pattern & (1 << (5 - index));
+}
+
+void mpeg1::assign_to_cb(const Block& block, MacroblockData& macroblock) {
+    for (size_t y = 0; y < 8; y++) {
+        for (size_t x = 0; x < 8; x++) {
+            auto val = block[x + y * 8];
+
+            macroblock[x * 2 + y * 2 * 16].cb = val;
+            macroblock[x * 2 + 1 + y * 2 * 16].cb = val;
+            macroblock[x * 2 + y * 2 * 16 + 16].cb = val;
+            macroblock[x * 2 + 1 + y * 2 * 16 + 16].cb = val;
+        }
+    }
+}
+
+void mpeg1::assign_to_cr(const Block& block, MacroblockData& macroblock) {
+    for (size_t y = 0; y < 8; y++) {
+        for (size_t x = 0; x < 8; x++) {
+            auto val = block[x + y * 8];
+
+            macroblock[x * 2 + y * 2 * 16].cr = val;
+            macroblock[x * 2 + 1 + y * 2 * 16].cr = val;
+            macroblock[x * 2 + y * 2 * 16 + 16].cr = val;
+            macroblock[x * 2 + 1 + y * 2 * 16 + 16].cr = val;
+        }
+    }
 }
