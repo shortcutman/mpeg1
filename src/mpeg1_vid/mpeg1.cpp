@@ -234,9 +234,7 @@ namespace {
 }
 
 std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, BlockContext& context) {
-    using namespace image;
-
-    std::array<Colour, 256> block;
+    std::array<image::Colour, 256> block;
     for (size_t block_i = 0; block_i < 6; block_i++) {
         std::array<int, 64> dct_recon;
         std::fill(dct_recon.begin(), dct_recon.end(), 0);
@@ -317,32 +315,7 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
         }
 
         if (block_i < 4) {
-            //y
-            auto start = 0;
-            if (block_i == 1 || block_i == 3) {
-                start += 8;
-            }
-            if (block_i == 2 || block_i == 3) {
-                start += 8 * 16; // 8 lines of 16 subpixels
-            }
-
-            auto apply = [](const int in, Colour& out) { out.y = in; };
-
-            util::transform_out(dct_recon.begin(), dct_recon.begin() + 8, block.begin() + start, apply);
-            start += 16;
-            util::transform_out(dct_recon.begin() + 8, dct_recon.begin() + 16, block.begin() + start, apply);
-            start += 16;
-            util::transform_out(dct_recon.begin() + 16, dct_recon.begin() + 24, block.begin() + start, apply);
-            start += 16;
-            util::transform_out(dct_recon.begin() + 24, dct_recon.begin() + 32, block.begin() + start, apply);
-            start += 16;
-            util::transform_out(dct_recon.begin() + 32, dct_recon.begin() + 40, block.begin() + start, apply);
-            start += 16;
-            util::transform_out(dct_recon.begin() + 40, dct_recon.begin() + 48, block.begin() + start, apply);
-            start += 16;
-            util::transform_out(dct_recon.begin() + 48, dct_recon.begin() + 56, block.begin() + start, apply);
-            start += 16;
-            util::transform_out(dct_recon.begin() + 56, dct_recon.begin() + 64, block.begin() + start, apply);
+            assign_to_y(dct_recon, block, block_i);
         } else if (block_i == 4) {
             assign_to_cb(dct_recon, block);
         } else if (block_i == 5) {
@@ -504,6 +477,34 @@ size_t mpeg1::calc_dct_zz_zero(size_t dc_size, size_t dc_differential) {
 
 bool mpeg1::check_cbp(uint32_t coded_block_pattern, size_t index) {
     return coded_block_pattern & (1 << (5 - index));
+}
+
+void mpeg1::assign_to_y(const Block& block, MacroblockData& macroblock, size_t index) {
+    auto start = 0;
+    if (index == 1 || index == 3) {
+        start += 8;
+    }
+    if (index == 2 || index == 3) {
+        start += 8 * 16; // 8 lines of 16 subpixels
+    }
+
+    auto apply = [](const int in, image::Colour& out) { out.y = in; };
+
+    util::transform_out(block.begin(), block.begin() + 8, macroblock.begin() + start, apply);
+    start += 16;
+    util::transform_out(block.begin() + 8, block.begin() + 16, macroblock.begin() + start, apply);
+    start += 16;
+    util::transform_out(block.begin() + 16, block.begin() + 24, macroblock.begin() + start, apply);
+    start += 16;
+    util::transform_out(block.begin() + 24, block.begin() + 32, macroblock.begin() + start, apply);
+    start += 16;
+    util::transform_out(block.begin() + 32, block.begin() + 40, macroblock.begin() + start, apply);
+    start += 16;
+    util::transform_out(block.begin() + 40, block.begin() + 48, macroblock.begin() + start, apply);
+    start += 16;
+    util::transform_out(block.begin() + 48, block.begin() + 56, macroblock.begin() + start, apply);
+    start += 16;
+    util::transform_out(block.begin() + 56, block.begin() + 64, macroblock.begin() + start, apply);
 }
 
 void mpeg1::assign_to_cb(const Block& block, MacroblockData& macroblock) {

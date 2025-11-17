@@ -129,6 +129,7 @@ namespace mpeg1 {
 
     bool check_cbp(uint32_t coded_block_pattern, size_t index);
 
+    void assign_to_y(const Block& block, MacroblockData& macroblock, size_t index);
     void assign_to_cb(const Block& block, MacroblockData& macroblock);
     void assign_to_cr(const Block& block, MacroblockData& macroblock);
 }
