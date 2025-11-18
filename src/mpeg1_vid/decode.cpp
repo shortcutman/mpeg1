@@ -169,27 +169,40 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                     if (context.macroblock.type.intra) {
                         auto block = mpeg1::read_intra_blocks(bits, context);
                         copy_mb_to_image(context.macroblock_address, block, context.current_image);
-                    } else if (context.macroblock.type.motion_forward) {
+                    } else {
                         auto mv = mpeg1::calc_motion_vectors(context.picture, context.macroblock, std::make_tuple(context.mv_right_for_prev, context.mv_down_for_prev));
                         std::tie(context.mv_right_for_prev, context.mv_down_for_prev) = mv;
                         auto block = copy_block_mv_from_image(context.macroblock_address, mv, context.last_predictive);
-                        copy_mb_to_image(context.macroblock_address, block, context.current_image);
-                    }
+                        
+                        if (context.macroblock.type.pattern) {
+                            for (size_t i = 0; i < 6; i++) {
+                                if (!mpeg1::check_cbp(context.macroblock.coded_block_pattern, i)) {
+                                    continue;
+                                }
 
-                    if (context.macroblock.type.pattern) {
-                        for (size_t i = 0; i < 6; i++) {
-                            if (!mpeg1::check_cbp(context.macroblock.coded_block_pattern, i)) {
-                                continue;
+                                auto dct = mpeg1::read_block(bits, context, i);
+
+                                if (i < 4) {
+                                    assign_to_y(dct, block, i);
+                                } else if (i == 4) {
+                                    assign_to_cb(dct, block);
+                                } else if (i == 5) {
+                                    assign_to_cr(dct, block);
+                                }
                             }
-
-                            mpeg1::read_block(bits, context, i);
                         }
+
+                        copy_mb_to_image(context.macroblock_address, block, context.current_image);
                     }
 
                     context.previous_macroblock_address = context.macroblock_address;
                 }
             }
         }
+    }
+
+    for (auto&c : context.current_image) {
+        c = image::ycbcrToRGB(c);
     }
 
     //this could be problematic, no check we got a complete image at end

@@ -380,6 +380,11 @@ std::array<int, 64> mpeg1::read_block(util::bitspan& data, BlockContext& context
 
     data.read_bits_be(2);
 
+    image::idct(dct_recon);
+    for (auto& val : dct_recon) {
+        val = std::max(-256, std::min(val, 255));
+    }
+
     return dct_recon;
 }
 
