@@ -325,10 +325,6 @@ std::array<image::Colour, 256> mpeg1::read_intra_blocks(util::bitspan& data, Blo
 
     context.past_intra_address = context.macroblock_address;
 
-    for (auto& c : block) {
-        c = ycbcrToRGB(c);
-    }
-
     return block;
 }
 

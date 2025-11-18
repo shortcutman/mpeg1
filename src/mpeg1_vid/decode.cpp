@@ -7,6 +7,7 @@
 
 #include "mpeg1.hpp"
 #include "constants.hpp"
+#include "colour.hpp"
 
 #include <cstddef>
 #include <print>
@@ -123,10 +124,16 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 i += bytes_size - bytes.size() - 1;
             } else if (*code == mpeg1::start_code::picture) {
                 if (pictures != 0) {
+                    auto imagecopy = context.current_image;
+
+                    for (auto&c : imagecopy) {
+                        c = image::ycbcrToRGB(c);
+                    }
+
                     image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(context.picture.coding_type)),
                                     context.encoded_width(),
                                     context.encoded_height(),
-                                    context.current_image);
+                                    imagecopy);
 
                     std::copy(context.current_image.begin(), context.current_image.end(), context.last_predictive.begin());
                 }
