@@ -488,7 +488,7 @@ void mpeg1::assign_to_y(const Block& block, MacroblockData& macroblock, size_t i
         start += 8 * 16; // 8 lines of 16 subpixels
     }
 
-    auto apply = [](const int in, image::Colour& out) { out.y = in; };
+    auto apply = [](const int in, image::Colour& out) { out.y += in; };
 
     util::transform_out(block.begin(), block.begin() + 8, macroblock.begin() + start, apply);
     start += 16;
@@ -512,10 +512,10 @@ void mpeg1::assign_to_cb(const Block& block, MacroblockData& macroblock) {
         for (size_t x = 0; x < 8; x++) {
             auto val = block[x + y * 8];
 
-            macroblock[x * 2 + y * 2 * 16].cb = val;
-            macroblock[x * 2 + 1 + y * 2 * 16].cb = val;
-            macroblock[x * 2 + y * 2 * 16 + 16].cb = val;
-            macroblock[x * 2 + 1 + y * 2 * 16 + 16].cb = val;
+            macroblock[x * 2 + y * 2 * 16].cb += val;
+            macroblock[x * 2 + 1 + y * 2 * 16].cb += val;
+            macroblock[x * 2 + y * 2 * 16 + 16].cb += val;
+            macroblock[x * 2 + 1 + y * 2 * 16 + 16].cb += val;
         }
     }
 }
@@ -525,10 +525,10 @@ void mpeg1::assign_to_cr(const Block& block, MacroblockData& macroblock) {
         for (size_t x = 0; x < 8; x++) {
             auto val = block[x + y * 8];
 
-            macroblock[x * 2 + y * 2 * 16].cr = val;
-            macroblock[x * 2 + 1 + y * 2 * 16].cr = val;
-            macroblock[x * 2 + y * 2 * 16 + 16].cr = val;
-            macroblock[x * 2 + 1 + y * 2 * 16 + 16].cr = val;
+            macroblock[x * 2 + y * 2 * 16].cr += val;
+            macroblock[x * 2 + 1 + y * 2 * 16].cr += val;
+            macroblock[x * 2 + y * 2 * 16 + 16].cr += val;
+            macroblock[x * 2 + 1 + y * 2 * 16 + 16].cr += val;
         }
     }
 }
