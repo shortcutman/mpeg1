@@ -15,6 +15,7 @@ add_library(libdanpg1
     src/idct.cpp
     src/mpeg1_vid/constants.cpp
     src/mpeg1_vid/decode.cpp
+    src/mpeg1_vid/decoder.cpp
     src/mpeg1_vid/mpeg1.cpp
     src/util.cpp
 )
