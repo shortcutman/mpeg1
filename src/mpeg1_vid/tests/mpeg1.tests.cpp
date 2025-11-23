@@ -7,6 +7,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 namespace {
 
 // https://stackoverflow.com/a/45172360
@@ -295,11 +297,7 @@ TEST(MPEG1, read_intra_macroblock_and_block_data) {
     mpeg1::BlockContext context;
     auto macroblock = mpeg1::read_intra_blocks(bits, context);
 
-    for (size_t i = 0; i < macroblock.size(); i++) {
-        ASSERT_EQ(macroblock[i].r, 1) << "Index: " << i;
-        ASSERT_EQ(macroblock[i].g, 1);
-        ASSERT_EQ(macroblock[i].b, 1);
-    }
+    ASSERT_TRUE(std::all_of(macroblock.begin(), macroblock.end(), std::bind(std::equal_to<>(), std::placeholders::_1, image::Colour{.y = 17, .cb = 128, .cr = 128})));
 }
 
 TEST(MPEG1, read_predictive_macroblock_and_block_data) {
@@ -331,12 +329,14 @@ TEST(MPEG1, read_predictive_macroblock_and_block_data) {
     std::array<int, 64> block;
 
     block = mpeg1::read_block(bits, context, 1);
-    EXPECT_EQ(block[0], -7);
+
+    ASSERT_TRUE(std::all_of(block.begin(), block.end(), std::bind(std::equal_to<>(), std::placeholders::_1, 0)));
 
     block = mpeg1::read_block(bits, context, 2);
-    EXPECT_EQ(block[0], 7);
-    EXPECT_EQ(block[8], -7);
+    ASSERT_TRUE(std::all_of(block.begin(), block.begin() + 32, std::bind(std::equal_to<>(), std::placeholders::_1, 0)));
+    ASSERT_TRUE(std::all_of(block.begin() + 32, block.begin() + 56, std::bind(std::equal_to<>(), std::placeholders::_1, 1)));
+    ASSERT_TRUE(std::all_of(block.begin() + 56, block.end(), std::bind(std::equal_to<>(), std::placeholders::_1, 2)));
 
     block = mpeg1::read_block(bits, context, 3);
-    EXPECT_EQ(block[0], 7);
+    ASSERT_TRUE(std::all_of(block.begin(), block.end(), std::bind(std::equal_to<>(), std::placeholders::_1, 0)));
 }
