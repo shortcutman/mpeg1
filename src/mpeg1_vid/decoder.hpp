@@ -5,29 +5,32 @@
 
 #pragma once
 
-#include <functional>
-#include <vector>
+#include "colour.hpp"
 
-namespace image {
-    class Colour;
-}
+#include <expected>
+#include <functional>
+#include <span>
+#include <vector>
 
 namespace mpeg1 {
     class Decoder {
     public:
-        typedef std::vector<std::byte> Data;
+        typedef std::span<std::byte> Data;
         typedef std::vector<image::Colour> Frame;
-        typedef std::function<void (const Frame&)> FrameCallback;
 
     private:
-        Data* _data;
-        FrameCallback _frame_callback;
+        Data _data;
 
     public:
         Decoder() {}
         ~Decoder() {}
 
-        void set_data(Data* data);
-        void set_callback(FrameCallback callback);
+        void set_data(Data data);
+
+        std::expected<Frame, std::runtime_error> next_frame();
+
+    protected:
+        bool peak_code() const;
+        std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error> next_code();
     };
 }
