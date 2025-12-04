@@ -41,16 +41,15 @@ TEST(MPEG1, read_sequence_header_fail_on_start_code) {
 }
 
 TEST(MPEG1, calculate_sizes) {
-    mpeg1::BlockContext context;
-    context.sequence = {
+    mpeg1::SequenceHeader sequence{
         .horizontal_size = 640,
         .vertical_size = 266
     };
 
-    EXPECT_EQ(context.mb_width(), 40);
-    EXPECT_EQ(context.mb_height(), 17);
-    EXPECT_EQ(context.encoded_width(), 640);
-    EXPECT_EQ(context.encoded_height(), 272);
+    EXPECT_EQ(sequence.mb_width(), 40);
+    EXPECT_EQ(sequence.mb_height(), 17);
+    EXPECT_EQ(sequence.encoded_width(), 640);
+    EXPECT_EQ(sequence.encoded_height(), 272);
 }
 
 TEST(MPEG1, read_group_of_pictures_header) {

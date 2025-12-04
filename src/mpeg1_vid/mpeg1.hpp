@@ -16,13 +16,19 @@
 
 namespace mpeg1 {
     struct SequenceHeader {
-        uint16_t horizontal_size;
-        uint16_t vertical_size;
-        float pel_aspect_ratio;
-        float picture_rate;
-        uint64_t bit_rate;
+        uint16_t horizontal_size = 0;
+        uint16_t vertical_size = 0;
+        float pel_aspect_ratio = 0;
+        float picture_rate = 0;
+        uint64_t bit_rate = 0;
         QuantizerMatrix intra_quantizer_matrix = DEFAULT_INTRA_QUANTIZER_MATRIX;
         QuantizerMatrix non_intra_quantizer_matrix = DEFAULT_NON_INTRA_QUANTIZER_MATRIX;
+
+        size_t mb_width() const { return (horizontal_size + 15) / 16; }
+        size_t mb_height() const { return (vertical_size + 15) / 16; }
+
+        size_t encoded_width() const { return mb_width() * 16; }
+        size_t encoded_height() const { return mb_height() * 16; }
     };
 
     struct GroupOfPicturesHeader {
@@ -91,12 +97,6 @@ namespace mpeg1 {
         PictureHeader picture;
         SliceHeader slice;
         Macroblock macroblock;
-
-        size_t mb_width() const { return (this->sequence.horizontal_size + 15) / 16; }
-        size_t mb_height() const { return (this->sequence.vertical_size + 15) / 16; }
-
-        size_t encoded_width() const { return mb_width() * 16; }
-        size_t encoded_height() const { return mb_height() * 16; }
 
         int previous_macroblock_address;
         int macroblock_address;

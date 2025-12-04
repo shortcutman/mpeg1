@@ -116,8 +116,8 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 context.sequence = mpeg1::read_sequence_header(bytes);
                 i += bytes_size - bytes.size() - 1;
 
-                context.last_predictive.resize(context.encoded_width() * context.encoded_height());
-                context.current_image.resize(context.encoded_width() * context.encoded_height());
+                context.last_predictive.resize(context.sequence.encoded_width() * context.sequence.encoded_height());
+                context.current_image.resize(context.sequence.encoded_width() * context.sequence.encoded_height());
             } else if (*code == mpeg1::start_code::group_of_pictures) {
                 std::println("\t\tFound GOP header code at byte no. {}", i);
                 mpeg1::read_gop_header(bytes);
@@ -131,8 +131,8 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                     }
 
                     image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(context.picture.coding_type)),
-                                    context.encoded_width(),
-                                    context.encoded_height(),
+                                    context.sequence.encoded_width(),
+                                    context.sequence.encoded_height(),
                                     imagecopy);
 
                     std::copy(context.current_image.begin(), context.current_image.end(), context.last_predictive.begin());
@@ -149,7 +149,7 @@ void mpeg1::decode(std::vector<std::byte>& data) {
 
                 util::bitspan bits(bytes);
                 context.slice = mpeg1::read_slice_header(bits);
-                context.previous_macroblock_address = (context.slice.vertical_position - 1) * context.mb_width() - 1;
+                context.previous_macroblock_address = (context.slice.vertical_position - 1) * context.sequence.mb_width() - 1;
                 context.past_intra_address = -2;
                 context.dct_dc_y_past = 1024;
                 context.dct_dc_cb_past = 1024;
@@ -207,7 +207,7 @@ void mpeg1::decode(std::vector<std::byte>& data) {
 
     //this could be problematic, no check we got a complete image at end
     image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(context.picture.coding_type)),
-                        context.encoded_width(),
-                        context.encoded_height(),
+                        context.sequence.encoded_width(),
+                        context.sequence.encoded_height(),
                         context.current_image);
 }
