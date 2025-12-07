@@ -30,7 +30,9 @@ namespace mpeg1 {
         std::expected<Frame, std::runtime_error> next_frame();
 
     protected:
-        bool peak_code() const;
+        bool peak_code(size_t offset) const;
         std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error> next_code();
+
+
     };
 }

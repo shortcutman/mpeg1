@@ -32,20 +32,20 @@ std::expected<mpeg1::Decoder::Frame, std::runtime_error> mpeg1::Decoder::next_fr
     return Frame();
 }
 
-bool mpeg1::Decoder::peak_code() const {
-    return _data.size() >= 4 &&
-           _data[0] == std::byte{0x00} &&
-           _data[1] == std::byte{0x00} &&
-           _data[2] == std::byte{0x01};
+bool mpeg1::Decoder::peak_code(size_t offset) const {
+    return _data.size() - offset >= 4 &&
+           _data[0 + offset] == std::byte{0x00} &&
+           _data[1 + offset] == std::byte{0x00} &&
+           _data[2 + offset] == std::byte{0x01};
 }
 
 std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error>
     mpeg1::Decoder::next_code() {
 
     for (size_t i = 0; i < _data.size(); i++) {
-        if (peak_code()) {
+        if (peak_code(i)) {
             uint32_t code = 0;
-            code |= 0x0100 | std::to_integer<uint8_t>(_data[3]);
+            code |= 0x0100 | std::to_integer<uint8_t>(_data[3 + i]);
             return std::make_tuple(code, _data);
         }
     }
