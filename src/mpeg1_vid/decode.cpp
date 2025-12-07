@@ -158,25 +158,25 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 context.mv_down_for_prev = 0;
 
                 while (bits.bits_remaining() > 32 && !peak_code(bits)) {
-                    context.macroblock = mpeg1::read_macroblock(bits, context.picture);
-                    context.macroblock_address = context.previous_macroblock_address + context.macroblock.address_increment;
+                    auto macroblock = mpeg1::read_macroblock(bits, context.picture);
+                    context.macroblock_address = context.previous_macroblock_address + macroblock.address_increment;
 
-                    if (!context.macroblock.type.motion_forward || context.macroblock.address_increment > 1) {
+                    if (!macroblock.type.motion_forward || macroblock.address_increment > 1) {
                         context.mv_right_for_prev = 0;
                         context.mv_down_for_prev = 0;
                     }
 
-                    if (context.macroblock.type.intra) {
+                    if (macroblock.type.intra) {
                         auto block = mpeg1::read_intra_blocks(bits, context);
                         copy_mb_to_image(context.macroblock_address, block, context.current_image);
                     } else {
-                        auto mv = mpeg1::calc_motion_vectors(context.picture, context.macroblock, std::make_tuple(context.mv_right_for_prev, context.mv_down_for_prev));
+                        auto mv = mpeg1::calc_motion_vectors(context.picture, macroblock, std::make_tuple(context.mv_right_for_prev, context.mv_down_for_prev));
                         std::tie(context.mv_right_for_prev, context.mv_down_for_prev) = mv;
                         auto block = copy_block_mv_from_image(context.macroblock_address, mv, context.last_predictive);
                         
-                        if (context.macroblock.type.pattern) {
+                        if (macroblock.type.pattern) {
                             for (size_t i = 0; i < 6; i++) {
-                                if (!mpeg1::check_cbp(context.macroblock.coded_block_pattern, i)) {
+                                if (!mpeg1::check_cbp(macroblock.coded_block_pattern, i)) {
                                     continue;
                                 }
 

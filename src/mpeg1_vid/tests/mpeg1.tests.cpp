@@ -314,16 +314,16 @@ TEST(MPEG1, read_predictive_macroblock_and_block_data) {
         .quantizer_scale = 4
     };
     context.previous_macroblock_address = 18;
-    context.macroblock = mpeg1::read_macroblock(bits, context.picture);
+    auto macroblock = mpeg1::read_macroblock(bits, context.picture);
 
-    EXPECT_EQ(context.macroblock.type.intra, false);
-    EXPECT_EQ(context.macroblock.type.motion_backward, false);
-    EXPECT_EQ(context.macroblock.type.motion_forward, true);
-    EXPECT_EQ(context.macroblock.type.pattern, true);
-    EXPECT_EQ(context.macroblock.type.quant, false);
-    EXPECT_EQ(context.macroblock.motion_horizontal_forward_code, 0);
-    EXPECT_EQ(context.macroblock.motion_vertical_forward_code, -1);
-    EXPECT_EQ(context.macroblock.coded_block_pattern, 28);
+    EXPECT_EQ(macroblock.type.intra, false);
+    EXPECT_EQ(macroblock.type.motion_backward, false);
+    EXPECT_EQ(macroblock.type.motion_forward, true);
+    EXPECT_EQ(macroblock.type.pattern, true);
+    EXPECT_EQ(macroblock.type.quant, false);
+    EXPECT_EQ(macroblock.motion_horizontal_forward_code, 0);
+    EXPECT_EQ(macroblock.motion_vertical_forward_code, -1);
+    EXPECT_EQ(macroblock.coded_block_pattern, 28);
 
     std::array<int, 64> block;
 

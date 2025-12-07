@@ -96,7 +96,6 @@ namespace mpeg1 {
         SequenceHeader sequence;
         PictureHeader picture;
         SliceHeader slice;
-        Macroblock macroblock;
 
         int previous_macroblock_address;
         int macroblock_address;
