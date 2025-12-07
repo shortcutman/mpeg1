@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <ostream>
 #include <span>
 #include <tuple>
 
@@ -69,6 +70,7 @@ struct Colour {
 Colour ycbcrToRGB(const Colour& ycbcr);
 void ycbcrToRGBOverMCU(Colour* data, size_t width, size_t x, size_t y);
 
+void writeOutPPM(std::ostream& out, size_t width, size_t height, std::span<Colour> data);
 void writeOutPPM(std::string filepath, size_t width, size_t height, std::span<Colour> data);
 
 }

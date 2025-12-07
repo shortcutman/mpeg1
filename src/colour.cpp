@@ -40,6 +40,27 @@ void image::ycbcrToRGBOverMCU(Colour *data, size_t width, size_t xStart, size_t 
     }
 }
 
+void image::writeOutPPM(std::ostream& out, size_t width, size_t height, std::span<Colour> data) {
+    if (width * height > data.size()) {
+        throw std::runtime_error("Width and height greater than provided data.");
+    }
+    
+    out << "P3" << std::endl;
+    out << width << " " << height << std::endl;
+    out << "255" << std::endl;
+     
+    for (size_t y = 0; y < height; y++) {
+        for (size_t x = 0; x < width; x++) {
+            auto pixel = data[x + y * width];
+            out << std::to_string(pixel.r) << " "
+                 << std::to_string(pixel.g) << " "
+                 << std::to_string(pixel.b) << " ";
+        }
+         
+        out << std::endl;
+    }
+}
+
 void image::writeOutPPM(std::string filepath, size_t width, size_t height, std::span<Colour> data) {
     std::ofstream file;
     file.open(filepath);
@@ -47,25 +68,8 @@ void image::writeOutPPM(std::string filepath, size_t width, size_t height, std::
     if (!file.is_open()) {
         throw std::runtime_error("Cannot open file for writing.");
     }
-    
-    if (width * height > data.size()) {
-        throw std::runtime_error("Width and height greater than provided data.");
-    }
-    
-    file << "P3" << std::endl;
-    file << width << " " << height << std::endl;
-    file << "255" << std::endl;
-     
-    for (size_t y = 0; y < height; y++) {
-        for (size_t x = 0; x < width; x++) {
-            auto pixel = data[x + y * width];
-            file << std::to_string(pixel.r) << " "
-                 << std::to_string(pixel.g) << " "
-                 << std::to_string(pixel.b) << " ";
-        }
-         
-        file << std::endl;
-    }
+
+    writeOutPPM(file, width, height, data);
     
     file.close();
 }
