@@ -46,7 +46,7 @@ std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error>
         if (peak_code(i)) {
             uint32_t code = 0;
             code |= 0x0100 | std::to_integer<uint8_t>(_data[3 + i]);
-            return std::make_tuple(code, _data);
+            return std::make_tuple(code, _data.subspan(i));
         }
     }
 

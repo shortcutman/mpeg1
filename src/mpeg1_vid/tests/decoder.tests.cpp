@@ -45,7 +45,7 @@ TEST(DecoderTest, next_code_picture_offset) {
 
     auto [code, code_data] = *next_code;
     EXPECT_EQ(code, 0x000001b8);
-    EXPECT_EQ(&code_data[0], &data[0]);
+    EXPECT_EQ(&code_data[0], &data[1]);
 }
 
 TEST(DecoderTest, next_frame_no_bytes) {
