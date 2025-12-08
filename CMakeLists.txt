@@ -44,6 +44,7 @@ enable_testing()
 add_executable(danpg1_tests
     src/mpeg1_vid/tests/decode.tests.cpp
     src/mpeg1_vid/tests/decoder.tests.cpp
+    src/mpeg1_vid/tests/decoder.integration.cpp
     src/mpeg1_vid/tests/mpeg1.tests.cpp
     src/mpeg1_vid/tests/vlctables.tests.cpp
     src/tests/bitspan.tests.cpp

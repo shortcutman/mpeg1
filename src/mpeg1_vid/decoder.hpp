@@ -6,6 +6,7 @@
 #pragma once
 
 #include "colour.hpp"
+#include "mpeg1.hpp"
 
 #include <expected>
 #include <functional>
@@ -21,6 +22,15 @@ namespace mpeg1 {
     private:
         Data _data;
 
+        Frame _last_frame;
+        Frame _current_frame;
+
+        mpeg1::SequenceHeader _sequence;
+        mpeg1::GroupOfPicturesHeader _gop;
+        mpeg1::PictureHeader _picture;
+
+        mpeg1::BlockContext _frame_context;
+
     public:
         Decoder() {}
         ~Decoder() {}
@@ -31,6 +41,7 @@ namespace mpeg1 {
 
     protected:
         bool peak_code(size_t offset) const;
+        bool peak_code(util::bitspan& bits) const;
         std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error> next_code();
 
 

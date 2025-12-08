@@ -5,6 +5,8 @@
 
 #include "decoder.hpp"
 
+#include "constants.hpp"
+#include "copy.hpp"
 #include "mpeg1.hpp"
 
 #include <print>
@@ -19,15 +21,109 @@ std::expected<mpeg1::Decoder::Frame, std::runtime_error> mpeg1::Decoder::next_fr
         return std::unexpected(std::runtime_error("No bytes to parse."));
     }
 
-    auto next = next_code();
-    if (!next) {
-        std::println("Decoder error: {}", next.error().what());
-        return Frame();
+    while (!_data.empty()) {
+        auto next = next_code();
+        if (!next) {
+            std::println("Decoder error: {}", next.error().what());
+            return std::unexpected(next.error());
+        }
+
+        auto [code, bytes] = next.value();
+        _data = bytes;
+
+        if (code == mpeg1::start_code::sequence) {
+            auto old_sequence = _sequence;
+            _sequence = mpeg1::read_sequence_header(_data);
+
+            if (_sequence.horizontal_size != old_sequence.horizontal_size ||
+                _sequence.vertical_size != old_sequence.vertical_size) {
+                auto pixel_count = _sequence.encoded_width() * _sequence.encoded_height();
+                _last_frame.resize(pixel_count);
+                _current_frame.resize(pixel_count);
+            }
+        } else if (code == mpeg1::start_code::group_of_pictures) {
+            _gop = mpeg1::read_gop_header(_data);
+        } else if (code == mpeg1::start_code::picture) {
+            _picture = mpeg1::read_picture_header(_data);
+        } else if (code >= mpeg1::start_code::slice_minimum &&
+                   code <= mpeg1::start_code::slice_maximum) {
+            
+            util::bitspan bits(_data);
+            auto slice_header = mpeg1::read_slice_header(bits);
+            _frame_context = BlockContext {
+                .sequence = _sequence,
+                .picture = _picture,
+                .slice = slice_header,
+                .previous_macroblock_address = static_cast<int>((slice_header.vertical_position - 1) * _sequence.mb_width() - 1),
+                .past_intra_address = -2,
+                .dct_dc_y_past = 1024,
+                .dct_dc_cb_past = 1024,
+                .dct_dc_cr_past = 1024,
+                .mv_right_for_prev = 0,
+                .mv_down_for_prev = 0
+            };
+
+            static int mbcnt = 0;
+            while (!peak_code(bits)) {
+                auto macroblock = mpeg1::read_macroblock(bits, _picture);
+                mbcnt++;
+                _frame_context.macroblock_address = _frame_context.previous_macroblock_address + macroblock.address_increment;
+
+                if (!macroblock.type.motion_forward || macroblock.address_increment > 1) {
+                    _frame_context.mv_right_for_prev = 0;
+                    _frame_context.mv_down_for_prev = 0;
+                }
+
+                if (macroblock.type.intra) {
+                    auto block = mpeg1::read_intra_blocks(bits, _frame_context);
+                    copy_mb_to_image(_frame_context.macroblock_address, block, _current_frame);
+                } else {
+                    auto mv = mpeg1::calc_motion_vectors(_picture, macroblock, std::make_tuple(_frame_context.mv_right_for_prev, _frame_context.mv_down_for_prev));
+                    std::tie(_frame_context.mv_right_for_prev, _frame_context.mv_down_for_prev) = mv;
+                    auto block = copy_block_mv_from_image(_frame_context.macroblock_address, mv, _last_frame);
+                    
+                    if (macroblock.type.pattern) {
+                        for (size_t i = 0; i < 6; i++) {
+                            if (!mpeg1::check_cbp(macroblock.coded_block_pattern, i)) {
+                                continue;
+                            }
+
+                            auto dct = mpeg1::read_block(bits, _frame_context, i);
+
+                            if (i < 4) {
+                                assign_to_y(dct, block, i);
+                            } else if (i == 4) {
+                                assign_to_cb(dct, block);
+                            } else if (i == 5) {
+                                assign_to_cr(dct, block);
+                            }
+                        }
+                    }
+
+                    copy_mb_to_image(_frame_context.macroblock_address, block, _current_frame);
+                }
+
+                _frame_context.previous_macroblock_address = _frame_context.macroblock_address;
+
+                if (_frame_context.macroblock_address >= _sequence.mb_width() * _sequence.mb_height() - 1) {
+                    _data = _data.subspan(bits.bytes_read());
+                    std::copy(_current_frame.begin(), _current_frame.end(), _last_frame.begin());
+
+                    auto imgcopy = _current_frame;
+
+                    for (auto& c : imgcopy) {
+                        c = image::ycbcrToRGB(c);
+                    }
+
+                    return imgcopy;
+                }
+            }
+
+            _data = _data.subspan(bits.bytes_read());
+        } else {
+            _data = _data.subspan(4);
+        }
     }
-
-    auto [code, bytes] = next.value();
-
-    std::println("Code: {}", code);
 
     return Frame();
 }
@@ -37,6 +133,13 @@ bool mpeg1::Decoder::peak_code(size_t offset) const {
            _data[0 + offset] == std::byte{0x00} &&
            _data[1 + offset] == std::byte{0x00} &&
            _data[2 + offset] == std::byte{0x01};
+}
+
+bool mpeg1::Decoder::peak_code(util::bitspan& bits) const {
+    auto unread_bytes_span = bits.to_aligned_span();
+    return (unread_bytes_span[0] == std::byte{0x00} &&
+            unread_bytes_span[1] == std::byte{0x00} &&
+            unread_bytes_span[2] == std::byte{0x01});
 }
 
 std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error>
