@@ -27,6 +27,18 @@ std::vector<std::byte> read_file(const std::string& filename) {
     return buffer;
 }
 
+// void dump_file(const std::vector<std::byte>& data, const std::string& filename) {
+//     std::ofstream file;
+//     file.open(filename, file.binary | file.out);
+
+//     if (!file.is_open()) {
+//         throw std::runtime_error("Couldn't open for writing.");
+//     }
+
+//     file.write(reinterpret_cast<const char*>(data.data()), data.size());
+//     file.close();
+// }
+
 }
 
 int main(int argc, char** argv) {
@@ -40,6 +52,8 @@ int main(int argc, char** argv) {
 
     std::vector<std::byte> video_es;
     pg1::loop_ts_data(data_span, video_es);
+
+    // dump_file(video_es, "/tmp/danpg1/video.mpg");
 
     mpeg1::decode(video_es);
 }
