@@ -43,7 +43,6 @@ TEST(DecoderIntegration, test_one) {
 
     std::stringstream ss;
     image::writeOutPPM(ss, 640, 272, frame_one.value());
-    image::writeOutPPM("/tmp/danpg1/test.ppm", 640, 272, frame_one.value());
     auto contents = ss.str();
 
     auto expected = read_file("../src/mpeg1_vid/tests/data/black_I_frame.ppm");
