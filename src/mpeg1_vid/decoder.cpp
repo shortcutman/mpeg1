@@ -63,10 +63,8 @@ std::expected<mpeg1::Decoder::Frame, std::runtime_error> mpeg1::Decoder::next_fr
                 .mv_down_for_prev = 0
             };
 
-            static int mbcnt = 0;
             while (!peak_code(bits)) {
                 auto macroblock = mpeg1::read_macroblock(bits, _picture);
-                mbcnt++;
                 _frame_context.macroblock_address = _frame_context.previous_macroblock_address + macroblock.address_increment;
 
                 if (!macroblock.type.motion_forward || macroblock.address_increment > 1) {
