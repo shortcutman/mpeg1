@@ -29,9 +29,7 @@ std::vector<std::byte> read_file(const std::string& filename) {
 
 }
 
-TEST(DecoderIntegration, test_one) {
-    std::println("cwd: {}", std::filesystem::current_path().string());
-
+TEST(DecoderIntegration, black_I_frame) {
     auto input = read_file("../src/mpeg1_vid/tests/data/black_I_frame.es");
     ASSERT_FALSE(input.empty());
 
@@ -53,9 +51,7 @@ TEST(DecoderIntegration, test_one) {
         }));
 }
 
-TEST(DecoderIntegration, test_two) {
-    std::println("cwd: {}", std::filesystem::current_path().string());
-
+TEST(DecoderIntegration, eye_I_frame_P_frame) {
     auto input = read_file("../src/mpeg1_vid/tests/data/eye_I_frame_P_frame.es");
     ASSERT_FALSE(input.empty());
 
