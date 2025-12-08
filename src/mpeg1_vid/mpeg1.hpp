@@ -58,7 +58,7 @@ namespace mpeg1 {
     };
 
     struct SliceHeader {
-        uint8_t vertical_position;
+        uint32_t vertical_position;
         uint8_t quantizer_scale;
     };
 
