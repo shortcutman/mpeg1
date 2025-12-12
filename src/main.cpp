@@ -10,8 +10,9 @@
 #include <vector>
 #include <iostream>
 
+#include "colour.hpp"
 #include "mpegts.hpp"
-#include "mpeg1_vid/decode.hpp"
+#include "mpeg1_vid/decoder.hpp"
 
 namespace {
 
@@ -55,5 +56,17 @@ int main(int argc, char** argv) {
 
     // dump_file(video_es, "/tmp/danpg1/video.mpg");
 
-    mpeg1::decode(video_es);
+    mpeg1::Decoder decoder;
+    decoder.set_data(video_es);
+
+    size_t frame_number = 0;
+    for (auto frame = decoder.next_frame(); frame.has_value(); frame = decoder.next_frame()) {
+        frame_number++;
+        std::println("Frame: {}", frame_number);
+        image::writeOutPPM(
+            std::format("/tmp/danpg1/frame_{:04d}.ppm", frame_number),
+            frame->encoded_width,
+            frame->encoded_height,
+            frame->image);
+    }
 }
