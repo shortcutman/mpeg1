@@ -38,9 +38,11 @@ TEST(DecoderIntegration, black_I_frame) {
 
     auto frame_one = d.next_frame();
     ASSERT_TRUE(frame_one.has_value()) << frame_one.error().what();
+    ASSERT_EQ(frame_one->encoded_width, 640);
+    ASSERT_EQ(frame_one->encoded_height, 272);
 
     std::stringstream ss;
-    image::writeOutPPM(ss, 640, 272, frame_one.value());
+    image::writeOutPPM(ss, frame_one->encoded_width, frame_one->encoded_height, frame_one->image);
     auto contents = ss.str();
 
     auto expected = read_file("../src/mpeg1_vid/tests/data/black_I_frame.ppm");
@@ -60,10 +62,12 @@ TEST(DecoderIntegration, eye_I_frame_P_frame) {
 
     auto frame_one = d.next_frame();
     ASSERT_TRUE(frame_one.has_value()) << frame_one.error().what();
+    ASSERT_EQ(frame_one->encoded_width, 640);
+    ASSERT_EQ(frame_one->encoded_height, 272);
 
     std::stringstream ss;
 
-    image::writeOutPPM(ss, 640, 272, frame_one.value());
+    image::writeOutPPM(ss, frame_one->encoded_width, frame_one->encoded_height, frame_one->image);
     auto contents = ss.str();
 
     auto expected = read_file("../src/mpeg1_vid/tests/data/eye_I_frame.ppm");
@@ -76,8 +80,10 @@ TEST(DecoderIntegration, eye_I_frame_P_frame) {
     ss.str("");
 
     auto frame_two = d.next_frame();
+    ASSERT_EQ(frame_two->encoded_width, 640);
+    ASSERT_EQ(frame_two->encoded_height, 272);
 
-    image::writeOutPPM(ss, 640, 272, frame_two.value());
+    image::writeOutPPM(ss, frame_two->encoded_width, frame_two->encoded_height, frame_two->image);
     auto contents2 = ss.str();
     auto expected2 = read_file("../src/mpeg1_vid/tests/data/eye_P_frame.ppm");
 

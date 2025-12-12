@@ -17,13 +17,19 @@ namespace mpeg1 {
     class Decoder {
     public:
         typedef std::span<std::byte> Data;
-        typedef std::vector<image::Colour> Frame;
+        typedef std::vector<image::Colour> ImageData;
+
+        struct Frame {
+            size_t encoded_width = 0;
+            size_t encoded_height = 0;
+            ImageData image;
+        };
 
     private:
         Data _data;
 
-        Frame _last_frame;
-        Frame _current_frame;
+        ImageData _last_frame;
+        ImageData _current_frame;
 
         mpeg1::SequenceHeader _sequence;
         mpeg1::GroupOfPicturesHeader _gop;
@@ -43,7 +49,5 @@ namespace mpeg1 {
         bool peak_code(size_t offset) const;
         bool peak_code(util::bitspan& bits) const;
         std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error> next_code();
-
-
     };
 }

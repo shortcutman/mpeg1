@@ -113,7 +113,11 @@ std::expected<mpeg1::Decoder::Frame, std::runtime_error> mpeg1::Decoder::next_fr
                         c = image::ycbcrToRGB(c);
                     }
 
-                    return imgcopy;
+                    return Frame{
+                        .encoded_width = _sequence.encoded_width(),
+                        .encoded_height = _sequence.encoded_height(),
+                        .image = std::move(imgcopy)
+                    };
                 }
             }
 
