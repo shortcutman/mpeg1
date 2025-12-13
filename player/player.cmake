@@ -4,4 +4,12 @@ add_executable(
     player/main.cpp
 )
 
-target_link_libraries(danpg1_player PRIVATE SDL3::SDL3 imgui)
+target_link_libraries(danpg1_player PRIVATE
+    SDL3::SDL3
+    imgui
+    metalcpp
+    libdanpg1
+    "-framework Foundation"
+    "-framework Metal"
+    "-framework QuartzCore"
+)

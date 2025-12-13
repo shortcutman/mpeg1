@@ -61,5 +61,6 @@ include(GoogleTest)
 gtest_discover_tests(danpg1_tests)
 
 find_package(SDL3 REQUIRED)
+include(vendor/metalcpp/metalcpp.cmake)
 include(vendor/imgui/imgui.cmake)
 include(player/player.cmake)

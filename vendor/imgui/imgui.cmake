@@ -9,6 +9,7 @@ FetchContent_MakeAvailable(imgui)
 add_library(
     imgui STATIC
     "${imgui_SOURCE_DIR}/imgui.cpp"
+    "${imgui_SOURCE_DIR}/imgui_demo.cpp"
     "${imgui_SOURCE_DIR}/imgui_draw.cpp"
     "${imgui_SOURCE_DIR}/imgui_tables.cpp"
     "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
@@ -23,6 +24,7 @@ target_include_directories(
 target_link_libraries(
     imgui PUBLIC
     SDL3::SDL3
+    metalcpp
     "-framework Foundation"
     "-framework Metal"
     "-framework QuartzCore"
@@ -33,3 +35,5 @@ set_source_files_properties(
     PROPERTIES
     COMPILE_OPTIONS "-ObjC++;-fobjc-weak;-fobjc-arc"
 )
+
+target_compile_definitions(imgui PRIVATE IMGUI_IMPL_METAL_CPP)
