@@ -50,6 +50,12 @@ int main(int argc, char** argv) {
     ImGui_ImplMetal_Init(layer->device());
     ImGui_ImplSDL3_InitForMetal(window);
 
+    auto textureDescriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
+    textureDescriptor->setPixelFormat(MTL::PixelFormatRGBA32Sint);
+    textureDescriptor->setWidth(640);
+    textureDescriptor->setHeight(272);
+    auto texture = NS::TransferPtr(metalDevice->newTexture(textureDescriptor.get()));
+
     bool quit = false;
     SDL_Event e;
     while (!quit) {
@@ -87,6 +93,8 @@ int main(int argc, char** argv) {
             ImGui::Begin("Player");
 
             ImGui::Text("This is where the player will go.");
+
+            ImGui::ImageWithBg(reinterpret_cast<ImTextureID>(texture.get()), ImVec2(640, 272), ImVec2(0,0), ImVec2(1,1), ImVec4(1.f, 0.f, 0.f, 1.f));
 
             ImGui::End();
         }
