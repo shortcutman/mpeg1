@@ -1,4 +1,7 @@
 
+#include "mpegts.hpp"
+#include "mpeg1_vid/decoder.hpp"
+
 #include <SDL3/SDL.h>
 #include <print>
 
@@ -12,6 +15,26 @@
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_metal.h>
+
+#include <span>
+#include <string>
+#include <fstream>
+
+namespace {
+
+std::vector<std::byte> read_file(const std::string& filename) {
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    if (!file) return {};
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<std::byte> buffer(size);
+    file.read(reinterpret_cast<char*>(buffer.data()), size);
+    return buffer;
+}
+
+}
 
 int main(int argc, char** argv) {
     std::println("Hello world!");
@@ -51,12 +74,54 @@ int main(int argc, char** argv) {
     ImGui_ImplSDL3_InitForMetal(window);
 
     auto textureDescriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
-    textureDescriptor->setPixelFormat(MTL::PixelFormatRGBA32Sint);
+    textureDescriptor->setPixelFormat(MTL::PixelFormatRGBA32Float);
     textureDescriptor->setWidth(640);
     textureDescriptor->setHeight(272);
     auto texture = NS::TransferPtr(metalDevice->newTexture(textureDescriptor.get()));
 
+    std::string input_filepath = "/Users/daniel/Projects.nosync/mpeg_data/blade-runner-2049-360p.ts";
+    std::vector<std::byte> data = read_file(input_filepath);
+    auto data_span = std::span{data};
+
+    std::vector<std::byte> video_es;
+    pg1::loop_ts_data(data_span, video_es);
+    mpeg1::Decoder decoder;
+    decoder.set_data(video_es);
+
     bool quit = false;
+
+    for (auto frame_number = 0; frame_number < 16; frame_number++) {
+        auto frame = decoder.next_frame();
+        if (!frame.has_value()) {
+            std::println("Error: {}", frame.error().what());
+            quit = true;
+        };
+    }
+
+    auto frameagain = decoder.next_frame();
+    if (frameagain.has_value()) {
+        auto img = frameagain.value();
+        image::writeOutPPM(
+            std::format("/tmp/danpg1/frame_{:04d}.ppm", 0),
+            img.encoded_width,
+            img.encoded_height,
+            img.image);
+        std::println("Size of colour {}", sizeof(image::Colour));
+
+        typedef std::array<float, 4> FlCol;
+        std::vector<FlCol> float_img;
+        
+        for (auto c : img.image) {
+            float r = c.r / 255.f;
+            float g = c.g / 255.f;
+            float b = c.b / 255.f;
+            float_img.push_back(FlCol{r, g, b, 1.f});
+        }
+
+        MTL::Region region = {0, 0, 0, 640, 272, 1};
+        texture->replaceRegion(region, 0, float_img.data(), 16 * 640);
+    }
+    
     SDL_Event e;
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
@@ -86,15 +151,15 @@ int main(int argc, char** argv) {
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        bool demowindow = false;
-        ImGui::ShowDemoWindow(&demowindow);
+        // bool demowindow = false;
+        // ImGui::ShowDemoWindow(&demowindow);
 
         {
             ImGui::Begin("Player");
 
             ImGui::Text("This is where the player will go.");
 
-            ImGui::ImageWithBg(reinterpret_cast<ImTextureID>(texture.get()), ImVec2(640, 272), ImVec2(0,0), ImVec2(1,1), ImVec4(1.f, 0.f, 0.f, 1.f));
+            ImGui::Image((ImTextureID)(intptr_t)(texture.get()), ImVec2(640, 272));
 
             ImGui::End();
         }
