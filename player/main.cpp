@@ -34,6 +34,20 @@ std::vector<std::byte> read_file(const std::string& filename) {
     return buffer;
 }
 
+void frame_to_texture(const mpeg1::Decoder::Frame& frame, MTL::Texture* texture) {
+    std::vector<std::array<float, 4>> img_float;
+
+    for (auto c : frame.image) {
+        float r = c.r / 255.f;
+        float g = c.g / 255.f;
+        float b = c.b / 255.f;
+        img_float.push_back({r, g, b, 1.f});
+    }
+
+    MTL::Region region = {0, 0, 0, frame.encoded_width, frame.encoded_height, 1};
+    texture->replaceRegion(region, 0, img_float.data(), 16 * frame.encoded_width);
+}
+
 }
 
 int main(int argc, char** argv) {
@@ -45,7 +59,7 @@ int main(int argc, char** argv) {
     }
 
     SDL_Window* window = SDL_CreateWindow(
-        "SDL3 Metalcpp Demo",
+        "danpg1 player",
         800, 600,
         SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_METAL
     );
@@ -79,7 +93,7 @@ int main(int argc, char** argv) {
     textureDescriptor->setHeight(272);
     auto texture = NS::TransferPtr(metalDevice->newTexture(textureDescriptor.get()));
 
-    std::string input_filepath = "/Users/daniel/Projects.nosync/mpeg_data/blade-runner-2049-360p.ts";
+    std::string input_filepath = argv[1];
     std::vector<std::byte> data = read_file(input_filepath);
     auto data_span = std::span{data};
 
@@ -87,41 +101,12 @@ int main(int argc, char** argv) {
     pg1::loop_ts_data(data_span, video_es);
     mpeg1::Decoder decoder;
     decoder.set_data(video_es);
-
-    bool quit = false;
-
-    for (auto frame_number = 0; frame_number < 16; frame_number++) {
-        auto frame = decoder.next_frame();
-        if (!frame.has_value()) {
-            std::println("Error: {}", frame.error().what());
-            quit = true;
-        };
-    }
-
     auto frameagain = decoder.next_frame();
     if (frameagain.has_value()) {
-        auto img = frameagain.value();
-        image::writeOutPPM(
-            std::format("/tmp/danpg1/frame_{:04d}.ppm", 0),
-            img.encoded_width,
-            img.encoded_height,
-            img.image);
-        std::println("Size of colour {}", sizeof(image::Colour));
-
-        typedef std::array<float, 4> FlCol;
-        std::vector<FlCol> float_img;
-        
-        for (auto c : img.image) {
-            float r = c.r / 255.f;
-            float g = c.g / 255.f;
-            float b = c.b / 255.f;
-            float_img.push_back(FlCol{r, g, b, 1.f});
-        }
-
-        MTL::Region region = {0, 0, 0, 640, 272, 1};
-        texture->replaceRegion(region, 0, float_img.data(), 16 * 640);
+        frame_to_texture(frameagain.value(), texture.get());
     }
-    
+
+    bool quit = false;
     SDL_Event e;
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
@@ -151,17 +136,28 @@ int main(int argc, char** argv) {
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        // bool demowindow = false;
-        // ImGui::ShowDemoWindow(&demowindow);
-
         {
-            ImGui::Begin("Player");
+            ImGui::SetNextWindowPos(ImVec2(0, 0));
+            ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::Begin("Player", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-            ImGui::Text("This is where the player will go.");
+            ImGui::Text("%s", std::format("Playing file: {}", input_filepath).c_str());
 
-            ImGui::Image((ImTextureID)(intptr_t)(texture.get()), ImVec2(640, 272));
+            auto aspect_ratio = 272.f / 640.f;
+            auto space = ImGui::GetContentRegionAvail();
+            auto vert = space.x * aspect_ratio;
+            ImGui::Image((ImTextureID)(intptr_t)(texture.get()), ImVec2(space.x, vert));
+
+            if (ImGui::Button("Next Frame")) {
+                auto frame_res = decoder.next_frame();
+                if (frame_res.has_value()) {
+                    frame_to_texture(frame_res.value(), texture.get());
+                }
+            }
 
             ImGui::End();
+            ImGui::PopStyleVar();
         }
 
         ImGui::Render();
