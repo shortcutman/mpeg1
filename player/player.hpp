@@ -1,0 +1,33 @@
+
+//------------------------------------------------------------------------------
+// player.hpp
+//------------------------------------------------------------------------------
+
+#pragma once
+
+#include "mpeg1_vid/decoder.hpp"
+
+#include <SDL3/SDL_timer.h>
+
+#include <Foundation/Foundation.hpp>
+#include <Metal/Metal.hpp>
+#include <QuartzCore/QuartzCore.hpp>
+
+namespace player {
+    class Player {
+    private:
+        NS::SharedPtr<MTL::Texture> _texture;
+        mpeg1::Decoder _decoder;
+        SDL_TimerID _timer;
+
+    public:
+        Player(NS::SharedPtr<MTL::Texture> texture);
+        ~Player();
+
+        bool open(std::string filepath);
+        void play();
+
+    private:
+        void step_frame_forward();
+    };
+}

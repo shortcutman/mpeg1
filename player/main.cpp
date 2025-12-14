@@ -1,58 +1,29 @@
 
-#include "mpegts.hpp"
-#include "mpeg1_vid/decoder.hpp"
-
-#include <SDL3/SDL.h>
-#include <print>
+//------------------------------------------------------------------------------
+// main.cpp
+//------------------------------------------------------------------------------
 
 #define NS_PRIVATE_IMPLEMENTATION
 #define MTL_PRIVATE_IMPLEMENTATION
 #define CA_PRIVATE_IMPLEMENTATION
+#include <Foundation/Foundation.hpp>
 #include <Metal/Metal.hpp>
 #include <QuartzCore/QuartzCore.hpp>
+
+#include "player.hpp"
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_timer.h>
 
 #define IMGUI_IMPL_METAL_CPP
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_metal.h>
 
-#include <span>
+#include <print>
 #include <string>
-#include <fstream>
-
-namespace {
-
-std::vector<std::byte> read_file(const std::string& filename) {
-    std::ifstream file(filename, std::ios::binary | std::ios::ate);
-    if (!file) return {};
-
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    std::vector<std::byte> buffer(size);
-    file.read(reinterpret_cast<char*>(buffer.data()), size);
-    return buffer;
-}
-
-void frame_to_texture(const mpeg1::Decoder::Frame& frame, MTL::Texture* texture) {
-    std::vector<std::array<float, 4>> img_float;
-
-    for (auto c : frame.image) {
-        float r = c.r / 255.f;
-        float g = c.g / 255.f;
-        float b = c.b / 255.f;
-        img_float.push_back({r, g, b, 1.f});
-    }
-
-    MTL::Region region = {0, 0, 0, frame.encoded_width, frame.encoded_height, 1};
-    texture->replaceRegion(region, 0, img_float.data(), 16 * frame.encoded_width);
-}
-
-}
 
 int main(int argc, char** argv) {
-    std::println("Hello world!");
-
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         std::println("Could not initialise SDL: {}", SDL_GetError());
         return 1;
@@ -94,17 +65,9 @@ int main(int argc, char** argv) {
     auto texture = NS::TransferPtr(metalDevice->newTexture(textureDescriptor.get()));
 
     std::string input_filepath = argv[1];
-    std::vector<std::byte> data = read_file(input_filepath);
-    auto data_span = std::span{data};
-
-    std::vector<std::byte> video_es;
-    pg1::loop_ts_data(data_span, video_es);
-    mpeg1::Decoder decoder;
-    decoder.set_data(video_es);
-    auto frameagain = decoder.next_frame();
-    if (frameagain.has_value()) {
-        frame_to_texture(frameagain.value(), texture.get());
-    }
+    player::Player player(texture);
+    player.open(input_filepath);
+    player.play();
 
     bool quit = false;
     SDL_Event e;
@@ -149,12 +112,12 @@ int main(int argc, char** argv) {
             auto vert = space.x * aspect_ratio;
             ImGui::Image((ImTextureID)(intptr_t)(texture.get()), ImVec2(space.x, vert));
 
-            if (ImGui::Button("Next Frame")) {
-                auto frame_res = decoder.next_frame();
-                if (frame_res.has_value()) {
-                    frame_to_texture(frame_res.value(), texture.get());
-                }
-            }
+            // if (ImGui::Button("Next Frame")) {
+            //     auto frame_res = decoder.next_frame();
+            //     if (frame_res.has_value()) {
+            //         frame_to_texture(frame_res.value(), texture.get());
+            //     }
+            // }
 
             ImGui::End();
             ImGui::PopStyleVar();
