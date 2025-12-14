@@ -60,9 +60,8 @@ bool player::Player::open(std::string filepath) {
 
     auto data_span = std::span{data};
 
-    std::vector<std::byte> video_es;
-    pg1::loop_ts_data(data_span, video_es);
-    _decoder.set_data(video_es);
+    pg1::loop_ts_data(data_span, _data);
+    _decoder.set_data(_data);
     auto first_frame = _decoder.next_frame();
     if (first_frame.has_value()) {
         frame_to_texture(first_frame.value(), _texture.get());

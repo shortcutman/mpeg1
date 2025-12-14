@@ -19,6 +19,7 @@ namespace player {
     class Player {
     private:
         NS::SharedPtr<MTL::Texture> _texture;
+        std::vector<std::byte> _data;
         mpeg1::Decoder _decoder;
         std::optional<SDL_TimerID> _timer;
 
