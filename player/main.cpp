@@ -112,6 +112,16 @@ int main(int argc, char** argv) {
             auto vert = space.x * aspect_ratio;
             ImGui::Image((ImTextureID)(intptr_t)(texture.get()), ImVec2(space.x, vert));
 
+            if (player.isPlaying()) {
+                if (ImGui::Button("Stop")) {
+                    player.stop();
+                }
+            } else {
+                if (ImGui::Button("Play")) {
+                    player.play();
+                }
+            }
+
             // if (ImGui::Button("Next Frame")) {
             //     auto frame_res = decoder.next_frame();
             //     if (frame_res.has_value()) {

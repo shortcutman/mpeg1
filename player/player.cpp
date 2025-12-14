@@ -47,7 +47,9 @@ player::Player::Player(NS::SharedPtr<MTL::Texture> texture)
 }
 
 player::Player::~Player() {
-    SDL_RemoveTimer(_timer);
+    if (_timer) {
+        SDL_RemoveTimer(*_timer);
+    }
 }
 
 bool player::Player::open(std::string filepath) {
@@ -71,6 +73,10 @@ bool player::Player::open(std::string filepath) {
     return true;
 }
 
+bool player::Player::isPlaying() {
+    return _timer.has_value();
+}
+
 void player::Player::play() {
     _timer = SDL_AddTimer(static_cast<uint32_t>(1000.0 / 23.976024),
         static_cast<uint32_t(*)(void*, SDL_TimerID, uint32_t)>([](void* ctx, SDL_TimerID timerID, uint32_t interval) -> uint32_t {
@@ -78,6 +84,13 @@ void player::Player::play() {
             player->step_frame_forward();
             return 1000.0 / 23.976024;
         }), this);
+}
+
+void player::Player::stop() {
+    if (_timer) {
+        SDL_RemoveTimer(*_timer);
+        _timer.reset();
+    }
 }
 
 void player::Player::step_frame_forward() {
