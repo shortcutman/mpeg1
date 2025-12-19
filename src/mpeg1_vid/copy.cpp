@@ -9,10 +9,11 @@
 
 void mpeg1::copy_mb_to_image(int addr, const std::array<image::Colour, 256>& block, image::Frame& frame) {
     const size_t span = frame.encoded_width;
+    const size_t span_mb = span / 16;
 
     // addr -= 1; //addr starts from 1
-    auto addrHorizontal = addr % 40;
-    auto addrVertical = addr / 40;
+    auto addrHorizontal = addr % span_mb;
+    auto addrVertical = addr / span_mb;
     auto imageStartIt = frame.image.begin() + addrHorizontal * 16 + addrVertical * 16 * span;
     for (size_t i = 0; i < 16; i++) {
         auto blockIt = block.begin() + i * 16;
