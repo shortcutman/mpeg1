@@ -8,6 +8,7 @@
 #include <ostream>
 #include <span>
 #include <tuple>
+#include <vector>
 
 namespace image {
 
@@ -65,6 +66,12 @@ struct Colour {
                 break;
         }
     }
+};
+
+struct Frame {
+    size_t encoded_width = 0;
+    size_t encoded_height = 0;
+    std::vector<Colour> image;
 };
 
 Colour ycbcrToRGB(const Colour& ycbcr);

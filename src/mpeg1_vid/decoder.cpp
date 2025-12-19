@@ -16,7 +16,7 @@ void mpeg1::Decoder::set_data(Data data) {
     _data = data;
 }
 
-std::expected<mpeg1::Decoder::Frame, std::runtime_error> mpeg1::Decoder::next_frame() {
+std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame() {
     if (_data.empty()) {
         return std::unexpected(std::runtime_error("No bytes to parse."));
     }
@@ -113,7 +113,7 @@ std::expected<mpeg1::Decoder::Frame, std::runtime_error> mpeg1::Decoder::next_fr
                         c = image::ycbcrToRGB(c);
                     }
 
-                    return Frame{
+                    return image::Frame{
                         .encoded_width = _sequence.encoded_width(),
                         .encoded_height = _sequence.encoded_height(),
                         .image = std::move(imgcopy)
@@ -127,7 +127,7 @@ std::expected<mpeg1::Decoder::Frame, std::runtime_error> mpeg1::Decoder::next_fr
         }
     }
 
-    return Frame();
+    return image::Frame();
 }
 
 float mpeg1::Decoder::frame_rate() const {

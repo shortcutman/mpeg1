@@ -25,7 +25,7 @@ std::vector<std::byte> read_file(const std::string& filename) {
     return buffer;
 }
 
-void frame_to_texture(const mpeg1::Decoder::Frame& frame, MTL::Texture* texture) {
+void frame_to_texture(const image::Frame& frame, MTL::Texture* texture) {
     std::vector<std::array<float, 4>> img_float;
 
     for (auto c : frame.image) {

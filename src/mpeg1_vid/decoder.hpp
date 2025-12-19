@@ -19,12 +19,6 @@ namespace mpeg1 {
         typedef std::span<std::byte> Data;
         typedef std::vector<image::Colour> ImageData;
 
-        struct Frame {
-            size_t encoded_width = 0;
-            size_t encoded_height = 0;
-            ImageData image;
-        };
-
     private:
         Data _data;
 
@@ -43,7 +37,7 @@ namespace mpeg1 {
 
         void set_data(Data data);
 
-        std::expected<Frame, std::runtime_error> next_frame();
+        std::expected<image::Frame, std::runtime_error> next_frame();
 
         float frame_rate() const;
 
