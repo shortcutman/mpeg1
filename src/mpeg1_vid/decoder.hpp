@@ -45,6 +45,8 @@ namespace mpeg1 {
 
         std::expected<Frame, std::runtime_error> next_frame();
 
+        float frame_rate() const;
+
     protected:
         bool peak_code(size_t offset) const;
         bool peak_code(util::bitspan& bits) const;

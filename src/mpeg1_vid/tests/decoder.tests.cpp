@@ -55,3 +55,14 @@ TEST(DecoderTest, next_frame_no_bytes) {
     EXPECT_THROW(throw d.next_frame().error(), std::runtime_error);
 }
 
+TEST(DecoderTest, frame_rate_getter) {
+    ToTestDecoder d;
+
+    EXPECT_EQ(d.frame_rate(), 0.f);
+
+    auto data = util::make_bytes(0x00, 0x00, 0x01, 0xb3, 0x3c, 0x02, 0x1c, 0x13, 0xff, 0xff, 0xe0, 0xd0);
+    d.set_data(data);
+    auto r = d.next_frame();
+    EXPECT_TRUE(r.has_value());
+    EXPECT_EQ(d.frame_rate(), 25.f);
+}

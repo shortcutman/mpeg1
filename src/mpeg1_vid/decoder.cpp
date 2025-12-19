@@ -130,6 +130,10 @@ std::expected<mpeg1::Decoder::Frame, std::runtime_error> mpeg1::Decoder::next_fr
     return Frame();
 }
 
+float mpeg1::Decoder::frame_rate() const {
+    return _sequence.picture_rate;
+}
+
 bool mpeg1::Decoder::peak_code(size_t offset) const {
     return _data.size() - offset >= 4 &&
            _data[0 + offset] == std::byte{0x00} &&

@@ -77,11 +77,11 @@ bool player::Player::isPlaying() {
 }
 
 void player::Player::play() {
-    _timer = SDL_AddTimer(static_cast<uint32_t>(1000.0 / 23.976024),
+    _timer = SDL_AddTimer(0,
         static_cast<uint32_t(*)(void*, SDL_TimerID, uint32_t)>([](void* ctx, SDL_TimerID timerID, uint32_t interval) -> uint32_t {
             auto player = reinterpret_cast<Player*>(ctx);
             player->step_frame_forward();
-            return 1000.0 / 23.976024;
+            return 1000.0 / player->_decoder.frame_rate();
         }), this);
 }
 
