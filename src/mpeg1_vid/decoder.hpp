@@ -17,13 +17,12 @@ namespace mpeg1 {
     class Decoder {
     public:
         typedef std::span<std::byte> Data;
-        typedef std::vector<image::Colour> ImageData;
 
     private:
         Data _data;
 
-        ImageData _last_frame;
-        ImageData _current_frame;
+        image::Frame _last_frame;
+        image::Frame _current_frame;
 
         mpeg1::SequenceHeader _sequence;
         mpeg1::GroupOfPicturesHeader _gop;

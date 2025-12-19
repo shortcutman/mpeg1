@@ -38,8 +38,14 @@ std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame() {
             if (_sequence.horizontal_size != old_sequence.horizontal_size ||
                 _sequence.vertical_size != old_sequence.vertical_size) {
                 auto pixel_count = _sequence.encoded_width() * _sequence.encoded_height();
-                _last_frame.resize(pixel_count);
-                _current_frame.resize(pixel_count);
+
+                _last_frame.encoded_width = _sequence.encoded_width();
+                _last_frame.encoded_height = _sequence.encoded_height();
+                _last_frame.image.resize(pixel_count);
+
+                _current_frame.encoded_width = _sequence.encoded_width();
+                _current_frame.encoded_height = _sequence.encoded_height();
+                _current_frame.image.resize(pixel_count);
             }
         } else if (code == mpeg1::start_code::group_of_pictures) {
             _gop = mpeg1::read_gop_header(_data);
@@ -105,19 +111,15 @@ std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame() {
 
                 if (_frame_context.macroblock_address >= _sequence.mb_width() * _sequence.mb_height() - 1) {
                     _data = _data.subspan(bits.bytes_read());
-                    std::copy(_current_frame.begin(), _current_frame.end(), _last_frame.begin());
+                    std::copy(_current_frame.image.begin(), _current_frame.image.end(), _last_frame.image.begin());
 
                     auto imgcopy = _current_frame;
 
-                    for (auto& c : imgcopy) {
+                    for (auto& c : imgcopy.image) {
                         c = image::ycbcrToRGB(c);
                     }
 
-                    return image::Frame{
-                        .encoded_width = _sequence.encoded_width(),
-                        .encoded_height = _sequence.encoded_height(),
-                        .image = std::move(imgcopy)
-                    };
+                    return imgcopy;
                 }
             }
 

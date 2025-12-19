@@ -50,8 +50,13 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 context.sequence = mpeg1::read_sequence_header(bytes);
                 i += bytes_size - bytes.size() - 1;
 
-                context.last_predictive.resize(context.sequence.encoded_width() * context.sequence.encoded_height());
-                context.current_image.resize(context.sequence.encoded_width() * context.sequence.encoded_height());
+                context.last_predictive.encoded_width = context.sequence.encoded_width();
+                context.last_predictive.encoded_height = context.sequence.encoded_height();
+                context.last_predictive.image.resize(context.sequence.encoded_width() * context.sequence.encoded_height());
+
+                context.current_image.encoded_width = context.sequence.encoded_width();
+                context.current_image.encoded_height = context.sequence.encoded_height();
+                context.current_image.image.resize(context.sequence.encoded_width() * context.sequence.encoded_height());
             } else if (*code == mpeg1::start_code::group_of_pictures) {
                 std::println("\t\tFound GOP header code at byte no. {}", i);
                 mpeg1::read_gop_header(bytes);
@@ -60,16 +65,16 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                 if (pictures != 0) {
                     auto imagecopy = context.current_image;
 
-                    for (auto&c : imagecopy) {
+                    for (auto&c : imagecopy.image) {
                         c = image::ycbcrToRGB(c);
                     }
 
                     image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(context.picture.coding_type)),
-                                    context.sequence.encoded_width(),
-                                    context.sequence.encoded_height(),
-                                    imagecopy);
+                                    imagecopy.encoded_width,
+                                    imagecopy.encoded_height,
+                                    imagecopy.image);
 
-                    std::copy(context.current_image.begin(), context.current_image.end(), context.last_predictive.begin());
+                    std::copy(context.current_image.image.begin(), context.current_image.image.end(), context.last_predictive.image.begin());
                 }
 
                 pictures++;
@@ -135,13 +140,13 @@ void mpeg1::decode(std::vector<std::byte>& data) {
         }
     }
 
-    for (auto&c : context.current_image) {
+    for (auto&c : context.current_image.image) {
         c = image::ycbcrToRGB(c);
     }
 
     //this could be problematic, no check we got a complete image at end
     image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(context.picture.coding_type)),
-                        context.sequence.encoded_width(),
-                        context.sequence.encoded_height(),
-                        context.current_image);
+                        context.current_image.encoded_width,
+                        context.current_image.encoded_height,
+                        context.current_image.image);
 }

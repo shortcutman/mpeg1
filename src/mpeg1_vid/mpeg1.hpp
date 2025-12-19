@@ -108,8 +108,8 @@ namespace mpeg1 {
         int mv_right_for_prev = 0;
         int mv_down_for_prev = 0;
 
-        std::vector<image::Colour> last_predictive;
-        std::vector<image::Colour> current_image;
+        image::Frame last_predictive;
+        image::Frame current_image;
     };
 
     SequenceHeader read_sequence_header(std::span<std::byte>& data);
