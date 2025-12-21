@@ -97,7 +97,8 @@ std::array<image::Colour, 256> mpeg1::copy_block_mv_from_image(int addr, std::tu
             for (size_t x = 0; x < 8; x++) {
                 auto c =
                     (source.image.at(addrHor + (right_for_c + x) * 2 + (addrVer + (down_for_c + y) * 2) * span) +
-                    source.image.at(addrHor + (right_for_c + x) * 2 + (addrVer + (down_for_c + y + 1) * 2) * span)) / 2;
+                    source.image.at(addrHor + (right_for_c + x) * 2 + (addrVer + (down_for_c + y + 1) * 2) * span) +
+                    image::Colour{.cb = 1, .cr = 1}) / 2;
                 block_cb[x + y*8] = c.cb;
                 block_cr[x + y*8] = c.cr;
                 (void)c;
@@ -108,7 +109,8 @@ std::array<image::Colour, 256> mpeg1::copy_block_mv_from_image(int addr, std::tu
             for (size_t x = 0; x < 8; x++) {
                 auto c =
                     (source.image.at(addrHor + (right_for_c + x) * 2 + (addrVer + (down_for_c + y) * 2) * span) +
-                    source.image.at(addrHor + (right_for_c + x + 1) * 2 + (addrVer + (down_for_c + y) * 2) * span)) / 2;
+                    source.image.at(addrHor + (right_for_c + x + 1) * 2 + (addrVer + (down_for_c + y) * 2) * span) +
+                    image::Colour{.cb = 1, .cr = 1}) / 2;
                 block_cb[x + y*8] = c.cb;
                 block_cr[x + y*8] = c.cr;
                 (void)c;
@@ -121,7 +123,8 @@ std::array<image::Colour, 256> mpeg1::copy_block_mv_from_image(int addr, std::tu
                     (source.image.at(addrHor + (right_for_c + x) * 2 + (addrVer + (down_for_c + y) * 2) * span) +
                     source.image.at(addrHor + (right_for_c + x + 1) * 2 + (addrVer + (down_for_c + y) * 2) * span) +
                     source.image.at(addrHor + (right_for_c + x) * 2 + (addrVer + (down_for_c + y + 1) * 2) * span) +
-                    source.image.at(addrHor + (right_for_c + x + 1) * 2 + (addrVer + (down_for_c + y + 1) * 2) * span)) / 4;
+                    source.image.at(addrHor + (right_for_c + x + 1) * 2 + (addrVer + (down_for_c + y + 1) * 2) * span) +
+                    image::Colour{.cb = 2, .cr = 2}) / 4;
                 block_cb[x + y*8] = c.cb;
                 block_cr[x + y*8] = c.cr;
                 (void)c;
