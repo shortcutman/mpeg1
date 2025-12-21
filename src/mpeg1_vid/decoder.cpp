@@ -58,7 +58,6 @@ std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame() {
             auto slice_header = mpeg1::read_slice_header(bits);
             _frame_context = BlockContext {
                 .sequence = _sequence,
-                .picture = _picture,
                 .slice = slice_header,
                 .previous_macroblock_address = static_cast<int>((slice_header.vertical_position - 1) * _sequence.mb_width() - 1),
                 .past_intra_address = -2,

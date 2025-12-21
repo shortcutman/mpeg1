@@ -94,7 +94,6 @@ namespace mpeg1 {
 
     struct BlockContext {
         SequenceHeader sequence;
-        PictureHeader picture;
         SliceHeader slice;
 
         int previous_macroblock_address;
@@ -107,9 +106,6 @@ namespace mpeg1 {
         int past_intra_address = -2;
         int mv_right_for_prev = 0;
         int mv_down_for_prev = 0;
-
-        image::Frame last_predictive;
-        image::Frame current_image;
     };
 
     SequenceHeader read_sequence_header(std::span<std::byte>& data);

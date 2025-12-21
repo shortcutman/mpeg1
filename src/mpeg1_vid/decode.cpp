@@ -37,7 +37,10 @@ void mpeg1::decode(std::vector<std::byte>& data) {
     std::println("Start video es decoding...");
 
     size_t pictures = 0;
-    mpeg1::BlockContext context;
+    mpeg1::PictureHeader picture;
+    image::Frame last_predictive;
+    image::Frame current_image;
+    mpeg1::BlockContext block_context;
 
     for (size_t i = 0; i < data.size(); i++) {
         auto bytes = std::span<std::byte>(data.begin() + i, data.end());
@@ -47,71 +50,76 @@ void mpeg1::decode(std::vector<std::byte>& data) {
 
             if (*code == mpeg1::start_code::sequence) {
                 std::println("\tFound sequence header code at byte no. {}", i);
-                context.sequence = mpeg1::read_sequence_header(bytes);
+                block_context.sequence = mpeg1::read_sequence_header(bytes);
                 i += bytes_size - bytes.size() - 1;
 
-                context.last_predictive.encoded_width = context.sequence.encoded_width();
-                context.last_predictive.encoded_height = context.sequence.encoded_height();
-                context.last_predictive.image.resize(context.sequence.encoded_width() * context.sequence.encoded_height());
+                last_predictive.encoded_width = block_context.sequence.encoded_width();
+                last_predictive.encoded_height = block_context.sequence.encoded_height();
+                last_predictive.image.resize(block_context.sequence.encoded_width() * block_context.sequence.encoded_height());
 
-                context.current_image.encoded_width = context.sequence.encoded_width();
-                context.current_image.encoded_height = context.sequence.encoded_height();
-                context.current_image.image.resize(context.sequence.encoded_width() * context.sequence.encoded_height());
+                current_image.encoded_width = block_context.sequence.encoded_width();
+                current_image.encoded_height = block_context.sequence.encoded_height();
+                current_image.image.resize(block_context.sequence.encoded_width() * block_context.sequence.encoded_height());
             } else if (*code == mpeg1::start_code::group_of_pictures) {
                 std::println("\t\tFound GOP header code at byte no. {}", i);
                 mpeg1::read_gop_header(bytes);
                 i += bytes_size - bytes.size() - 1;
             } else if (*code == mpeg1::start_code::picture) {
                 if (pictures != 0) {
-                    auto imagecopy = context.current_image;
+                    auto imagecopy = current_image;
 
                     for (auto&c : imagecopy.image) {
                         c = image::ycbcrToRGB(c);
                     }
 
-                    image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(context.picture.coding_type)),
+                    image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(picture.coding_type)),
                                     imagecopy.encoded_width,
                                     imagecopy.encoded_height,
                                     imagecopy.image);
 
-                    std::copy(context.current_image.image.begin(), context.current_image.image.end(), context.last_predictive.image.begin());
+                    std::copy(current_image.image.begin(), current_image.image.end(), last_predictive.image.begin());
                 }
 
                 pictures++;
 
-                context.picture = mpeg1::read_picture_header(bytes);
+                picture = mpeg1::read_picture_header(bytes);
                 i += bytes_size - bytes.size() - 1;
 
-                std::println("\t\t\tFound picture header code at byte no. {}, pic num {} type {}", i, pictures, mpeg1::ct_to_string(context.picture.coding_type));
+                std::println("\t\t\tFound picture header code at byte no. {}, pic num {} type {}", i, pictures, mpeg1::ct_to_string(picture.coding_type));
             } else if (*code >= mpeg1::start_code::slice_minimum &&
                         *code <= mpeg1::start_code::slice_maximum) {
 
                 util::bitspan bits(bytes);
-                context.slice = mpeg1::read_slice_header(bits);
-                context.previous_macroblock_address = (context.slice.vertical_position - 1) * context.sequence.mb_width() - 1;
-                context.past_intra_address = -2;
-                context.dct_dc_y_past = 1024;
-                context.dct_dc_cb_past = 1024;
-                context.dct_dc_cr_past = 1024;
-                context.mv_right_for_prev = 0;
-                context.mv_down_for_prev = 0;
+                auto slice = mpeg1::read_slice_header(bits);
+                block_context = mpeg1::BlockContext{
+                    .sequence = block_context.sequence,
+                    .slice = slice,
+                    .previous_macroblock_address = static_cast<int>((slice.vertical_position - 1) * block_context.sequence.mb_width() - 1),
+                    .past_intra_address = -2,
+                    .dct_dc_y_past = 1024,
+                    .dct_dc_cb_past = 1024,
+                    .dct_dc_cr_past = 1024,
+                    .mv_right_for_prev = 0,
+                    .mv_down_for_prev = 0
+                };
+
 
                 while (bits.bits_remaining() > 32 && !peak_code(bits)) {
-                    auto macroblock = mpeg1::read_macroblock(bits, context.picture);
-                    context.macroblock_address = context.previous_macroblock_address + macroblock.address_increment;
+                    auto macroblock = mpeg1::read_macroblock(bits, picture);
+                    block_context.macroblock_address = block_context.previous_macroblock_address + macroblock.address_increment;
 
                     if (!macroblock.type.motion_forward || macroblock.address_increment > 1) {
-                        context.mv_right_for_prev = 0;
-                        context.mv_down_for_prev = 0;
+                        block_context.mv_right_for_prev = 0;
+                        block_context.mv_down_for_prev = 0;
                     }
 
                     if (macroblock.type.intra) {
-                        auto block = mpeg1::read_intra_blocks(bits, context);
-                        copy_mb_to_image(context.macroblock_address, block, context.current_image);
+                        auto block = mpeg1::read_intra_blocks(bits, block_context);
+                        copy_mb_to_image(block_context.macroblock_address, block, current_image);
                     } else {
-                        auto mv = mpeg1::calc_motion_vectors(context.picture, macroblock, std::make_tuple(context.mv_right_for_prev, context.mv_down_for_prev));
-                        std::tie(context.mv_right_for_prev, context.mv_down_for_prev) = mv;
-                        auto block = copy_block_mv_from_image(context.macroblock_address, mv, context.last_predictive);
+                        auto mv = mpeg1::calc_motion_vectors (picture, macroblock, std::make_tuple (block_context.mv_right_for_prev, block_context.mv_down_for_prev));
+                        std::tie (block_context.mv_right_for_prev, block_context.mv_down_for_prev) = mv;
+                        auto block = copy_block_mv_from_image (block_context.macroblock_address, mv, last_predictive);
                         
                         if (macroblock.type.pattern) {
                             for (size_t i = 0; i < 6; i++) {
@@ -119,7 +127,7 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                                     continue;
                                 }
 
-                                auto dct = mpeg1::read_block(bits, context, i);
+                                auto dct = mpeg1::read_block(bits, block_context, i);
 
                                 if (i < 4) {
                                     assign_to_y(dct, block, i);
@@ -131,22 +139,22 @@ void mpeg1::decode(std::vector<std::byte>& data) {
                             }
                         }
 
-                        copy_mb_to_image(context.macroblock_address, block, context.current_image);
+                        copy_mb_to_image (block_context.macroblock_address, block, current_image);
                     }
 
-                    context.previous_macroblock_address = context.macroblock_address;
+                    block_context.previous_macroblock_address = block_context.macroblock_address;
                 }
             }
         }
     }
 
-    for (auto&c : context.current_image.image) {
+    for (auto&c : current_image.image) {
         c = image::ycbcrToRGB(c);
     }
 
     //this could be problematic, no check we got a complete image at end
-    image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string(context.picture.coding_type)),
-                        context.current_image.encoded_width,
-                        context.current_image.encoded_height,
-                        context.current_image.image);
+    image::writeOutPPM(std::format("/tmp/danpg1/img_{:04d}_{}.ppm", pictures, mpeg1::ct_to_string (picture.coding_type)),
+                        current_image.encoded_width,
+                        current_image.encoded_height,
+                        current_image.image);
 }

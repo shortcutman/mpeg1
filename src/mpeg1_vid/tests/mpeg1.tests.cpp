@@ -304,17 +304,18 @@ TEST(MPEG1, read_predictive_macroblock_and_block_data) {
     auto span = std::span<std::byte>(data);
     auto bits = util::bitspan(span);
     bits.read_bits_be(1);
-    
-    mpeg1::BlockContext context;
-    context.picture = {
+
+    auto picture = mpeg1::PictureHeader{
         .coding_type = mpeg1::CodingType::PredictiveCoded,
         .forward_f_code = 2
     };
+    
+    mpeg1::BlockContext context;
     context.slice = {
         .quantizer_scale = 4
     };
     context.previous_macroblock_address = 18;
-    auto macroblock = mpeg1::read_macroblock(bits, context.picture);
+    auto macroblock = mpeg1::read_macroblock(bits, picture);
 
     EXPECT_EQ(macroblock.type.intra, false);
     EXPECT_EQ(macroblock.type.motion_backward, false);
