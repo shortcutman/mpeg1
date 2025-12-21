@@ -72,6 +72,14 @@ struct Frame {
     size_t encoded_width = 0;
     size_t encoded_height = 0;
     std::vector<Colour> image;
+
+    static Frame make_frame(size_t width, size_t height) {
+        return Frame{
+            .encoded_width = width,
+            .encoded_height = height,
+            .image = std::vector<Colour>(width * height)
+        };
+    }
 };
 
 Colour ycbcrToRGB(const Colour& ycbcr);

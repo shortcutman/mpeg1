@@ -42,6 +42,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(danpg1_tests
+    src/mpeg1_vid/tests/copy.tests.cpp
     src/mpeg1_vid/tests/decode.tests.cpp
     src/mpeg1_vid/tests/decoder.tests.cpp
     src/mpeg1_vid/tests/decoder.integration.cpp
