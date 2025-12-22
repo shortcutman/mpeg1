@@ -326,7 +326,7 @@ void mpeg1::assign_to_y(const Block& block, MacroblockData& macroblock, size_t i
         start += 8 * 16; // 8 lines of 16 subpixels
     }
 
-    auto apply = [](const int in, image::Colour& out) { out.y += in; };
+    auto apply = [](const int in, image::Colour& out) { out.y = std::clamp(out.y + in, 0, 255); };
 
     util::transform_out(block.begin(), block.begin() + 8, macroblock.begin() + start, apply);
     start += 16;
@@ -345,6 +345,12 @@ void mpeg1::assign_to_y(const Block& block, MacroblockData& macroblock, size_t i
     util::transform_out(block.begin() + 56, block.begin() + 64, macroblock.begin() + start, apply);
 }
 
+namespace {
+    void clamp(int& v) {
+        v = std::clamp(v, 0, 255);
+    }
+}
+
 void mpeg1::assign_to_cb(const Block& block, MacroblockData& macroblock) {
     for (size_t y = 0; y < 8; y++) {
         for (size_t x = 0; x < 8; x++) {
@@ -354,6 +360,11 @@ void mpeg1::assign_to_cb(const Block& block, MacroblockData& macroblock) {
             macroblock[x * 2 + 1 + y * 2 * 16].cb += val;
             macroblock[x * 2 + y * 2 * 16 + 16].cb += val;
             macroblock[x * 2 + 1 + y * 2 * 16 + 16].cb += val;
+
+            clamp(macroblock[x * 2 + y * 2 * 16].cb);
+            clamp(macroblock[x * 2 + 1 + y * 2 * 16].cb);
+            clamp(macroblock[x * 2 + y * 2 * 16 + 16].cb);
+            clamp(macroblock[x * 2 + 1 + y * 2 * 16 + 16].cb);
         }
     }
 }
@@ -367,6 +378,11 @@ void mpeg1::assign_to_cr(const Block& block, MacroblockData& macroblock) {
             macroblock[x * 2 + 1 + y * 2 * 16].cr += val;
             macroblock[x * 2 + y * 2 * 16 + 16].cr += val;
             macroblock[x * 2 + 1 + y * 2 * 16 + 16].cr += val;
+
+            clamp(macroblock[x * 2 + y * 2 * 16].cr);
+            clamp(macroblock[x * 2 + 1 + y * 2 * 16].cr);
+            clamp(macroblock[x * 2 + y * 2 * 16 + 16].cr);
+            clamp(macroblock[x * 2 + 1 + y * 2 * 16 + 16].cr);
         }
     }
 }
