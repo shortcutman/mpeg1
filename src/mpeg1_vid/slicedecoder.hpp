@@ -30,12 +30,13 @@ namespace mpeg1 {
         int _mv_down_for_prev = 0;
 
     public:
-        SliceDecoder(mpeg1::SequenceHeader sequence, mpeg1::PictureHeader picture) : _sequence(sequence), _picture(picture)
-        {}
+        SliceDecoder(mpeg1::SequenceHeader sequence, mpeg1::PictureHeader picture);
 
         int decode(std::span<std::byte>& data, const image::Frame& source, image::Frame& destination);
 
     protected:
+        void reset();
+
         std::array<image::Colour, 256> read_intra_blocks(util::bitspan& data);
         std::array<int, 64> read_block(util::bitspan& data, size_t block_index);
 

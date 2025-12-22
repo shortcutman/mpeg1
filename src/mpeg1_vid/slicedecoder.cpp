@@ -25,8 +25,15 @@ namespace {
     }
 }
 
+mpeg1::SliceDecoder::SliceDecoder(mpeg1::SequenceHeader sequence, mpeg1::PictureHeader picture)
+: _sequence(sequence)
+, _picture(picture) {
+    reset();
+}
+
 int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& source, image::Frame& destination) {
     util::bitspan bits(data);
+    reset();
 
     _slice = mpeg1::read_slice_header(bits);
     _previous_macroblock_address = (_slice.vertical_position - 1) * _sequence.mb_width() - 1;
@@ -79,6 +86,15 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
     data = data.subspan(bits.bytes_read());
 
     return _macroblock_address;
+}
+
+void mpeg1::SliceDecoder::reset() {
+    _dct_dc_y_past = 1024;
+    _dct_dc_cb_past = 1024;
+    _dct_dc_cr_past = 10;
+    _past_intra_address = -2;
+    _mv_right_for_prev = 0;
+    _mv_down_for_prev = 0;
 }
 
 std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bitspan& data) {
