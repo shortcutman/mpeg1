@@ -36,12 +36,12 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
     reset();
 
     _slice = mpeg1::read_slice_header(bits);
-    _previous_macroblock_address = (_slice.vertical_position - 1) * _sequence.mb_width() - 1;
+    int previous_macroblock_address = (_slice.vertical_position - 1) * _sequence.mb_width() - 1;
 
     try {
         while (!peak_code(bits)) {
             auto macroblock = mpeg1::read_macroblock(bits, _picture);
-            _macroblock_address = _previous_macroblock_address + macroblock.address_increment;
+            int macroblock_address = previous_macroblock_address + macroblock.address_increment;
 
             if (!macroblock.type.motion_forward || macroblock.address_increment > 1) {
                 _mv_right_for_prev = 0;
@@ -55,12 +55,12 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
             }
 
             if (macroblock.type.intra) {
-                auto block = read_intra_blocks(bits);
-                copy_mb_to_image(_macroblock_address, block, destination);
+                auto block = read_intra_blocks(bits, macroblock_address);
+                copy_mb_to_image(macroblock_address, block, destination);
             } else {
                 auto mv = mpeg1::calc_motion_vectors(_picture, macroblock, std::make_tuple(_mv_right_for_prev, _mv_down_for_prev));
                 std::tie(_mv_right_for_prev, _mv_down_for_prev) = mv;
-                auto block = copy_block_mv_from_image(_macroblock_address, mv, source);
+                auto block = copy_block_mv_from_image(macroblock_address, mv, source);
                 
                 if (macroblock.type.pattern) {
                     for (size_t i = 0; i < 6; i++) {
@@ -80,10 +80,10 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
                     }
                 }
 
-                copy_mb_to_image(_macroblock_address, block, destination);
+                copy_mb_to_image(macroblock_address, block, destination);
             }
 
-            _previous_macroblock_address = _macroblock_address;
+            previous_macroblock_address = macroblock_address;
         }
     } catch (std::exception& e) {
         std::println("Experienced exception: {}", e.what());
@@ -91,7 +91,7 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
 
     data = data.subspan(bits.bytes_read());
 
-    return _macroblock_address;
+    return previous_macroblock_address;
 }
 
 void mpeg1::SliceDecoder::reset() {
@@ -103,7 +103,8 @@ void mpeg1::SliceDecoder::reset() {
     _mv_down_for_prev = 0;
 }
 
-std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bitspan& data) {
+std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bitspan& data,
+                                                                      int mb_addr) {
     std::array<image::Colour, 256> block;
     for (size_t block_i = 0; block_i < 6; block_i++) {
         std::array<int, 64> dct_recon;
@@ -130,7 +131,7 @@ std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bits
             dct_recon[0] = calc_dct_zz_zero(dct_dc_size, dct_dc_differential);
         }
         dct_recon[0] *= 8;
-        if ((_macroblock_address - _past_intra_address > 1) &&
+        if ((mb_addr - _past_intra_address > 1) &&
             (block_i == 0 || block_i == 4 || block_i == 5)) {
             dct_recon[0] = (128 * 8) + dct_recon[0];
         } else {
@@ -193,7 +194,7 @@ std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bits
         }
     }
 
-    _past_intra_address = _macroblock_address;
+    _past_intra_address = mb_addr;
 
     return block;
 }
