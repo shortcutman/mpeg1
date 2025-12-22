@@ -25,6 +25,10 @@ std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame() {
     while (!_data.empty()) {
         auto next = next_code();
         if (!next) {
+            if (!returned_current_frame) {
+                return assemble_frame();
+            }
+
             std::println("Decoder error: {}", next.error().what());
             return std::unexpected(next.error());
         }
@@ -51,20 +55,23 @@ std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame() {
         } else if (code == mpeg1::start_code::group_of_pictures) {
             _gop = mpeg1::read_gop_header(_data);
         } else if (code == mpeg1::start_code::picture) {
+            if (!returned_current_frame) {
+                returned_current_frame = true;
+                return assemble_frame();
+            }
+
             _picture = mpeg1::read_picture_header(_data);
         } else if (code >= mpeg1::start_code::slice_minimum &&
                    code <= mpeg1::start_code::slice_maximum) {
             mpeg1::SliceDecoder slicedecoder(_sequence, _picture);
+
             auto last_mb_addr = slicedecoder.decode(_data, _last_frame, _current_frame);
 
             if (last_mb_addr >= _sequence.mb_width() * _sequence.mb_height() - 1) {
-                std::copy(_current_frame.image.begin(), _current_frame.image.end(), _last_frame.image.begin());
-
-                auto imgcopy = _current_frame;
-                for (auto& c : imgcopy.image) {
-                    c = image::ycbcrToRGB(c);
-                }
-                return imgcopy;
+                returned_current_frame = true;
+                return assemble_frame();
+            } else {
+                returned_current_frame = false;
             }
         } else {
             _data = _data.subspan(4);
@@ -95,6 +102,10 @@ bool mpeg1::Decoder::peak_code(util::bitspan& bits) const {
 std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error>
     mpeg1::Decoder::next_code() {
 
+    if (_data.empty()) {
+        return std::unexpected(std::runtime_error("No more bytes."));
+    }
+
     for (size_t i = 0; i < _data.size(); i++) {
         if (peak_code(i)) {
             uint32_t code = 0;
@@ -104,4 +115,17 @@ std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error>
     }
 
     return std::unexpected(std::runtime_error("Could not find start code."));
+}
+
+image::Frame mpeg1::Decoder::assemble_frame() {
+    std::copy(_current_frame.image.begin(), _current_frame.image.end(), _last_frame.image.begin());
+
+    auto imgcopy = _current_frame;
+    for (auto& c : imgcopy.image) {
+        c = image::ycbcrToRGB(c);
+    }
+
+    imgcopy.description = mpeg1::ct_to_string(_picture.coding_type);
+    
+    return imgcopy;
 }

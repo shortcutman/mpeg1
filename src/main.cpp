@@ -62,9 +62,9 @@ int main(int argc, char** argv) {
     size_t frame_number = 0;
     for (auto frame = decoder.next_frame(); frame.has_value(); frame = decoder.next_frame()) {
         frame_number++;
-        std::println("Frame: {}", frame_number);
+        std::println("Frame: {} {}", frame_number, frame->description);
         image::writeOutPPM(
-            std::format("/tmp/danpg1/frame_{:04d}.ppm", frame_number),
+            std::format("/tmp/danpg1/frame_{:04d}_{}.ppm", frame_number, frame->description),
             frame->encoded_width,
             frame->encoded_height,
             frame->image);

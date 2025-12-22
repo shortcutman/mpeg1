@@ -91,3 +91,31 @@ TEST(DecoderIntegration, eye_I_frame_P_frame) {
             return a == std::to_integer<char>(b);
         }));
 }
+
+TEST(DecoderIntegration, frame_end_macroblock_skip_next_pic_header) {
+    auto input = read_file("../src/mpeg1_vid/tests/data/frame_end_macroblock_skip.es");
+    ASSERT_FALSE(input.empty());
+
+    mpeg1::Decoder d;
+    d.set_data(input);
+
+    for (size_t i = 0; i < 8; i++) {
+        auto frame = d.next_frame(); 
+        EXPECT_TRUE(frame.has_value()) << frame.error().what();
+    }
+}
+
+TEST(DecoderIntegration, frame_end_macroblock_skip_eof) {
+    auto input = read_file("../src/mpeg1_vid/tests/data/frame_end_macroblock_skip.es");
+    ASSERT_FALSE(input.empty());
+
+    auto adjusted_span = std::span<std::byte>(input.begin(), input.end() - 9);
+
+    mpeg1::Decoder d;
+    d.set_data(adjusted_span);
+
+    for (size_t i = 0; i < 8; i++) {
+        auto frame = d.next_frame(); 
+        EXPECT_TRUE(frame.has_value()) << frame.error().what();
+    }
+}

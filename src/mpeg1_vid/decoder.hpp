@@ -23,6 +23,7 @@ namespace mpeg1 {
 
         image::Frame _last_frame;
         image::Frame _current_frame;
+        bool returned_current_frame = true;
 
         mpeg1::SequenceHeader _sequence;
         mpeg1::GroupOfPicturesHeader _gop;
@@ -44,5 +45,7 @@ namespace mpeg1 {
         bool peak_code(size_t offset) const;
         bool peak_code(util::bitspan& bits) const;
         std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error> next_code();
+
+        image::Frame assemble_frame();
     };
 }
