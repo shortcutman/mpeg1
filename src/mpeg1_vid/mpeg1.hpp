@@ -92,22 +92,6 @@ namespace mpeg1 {
         uint32_t coded_block_pattern = 0;
     };
 
-    struct BlockContext {
-        SequenceHeader sequence;
-        SliceHeader slice;
-
-        int previous_macroblock_address;
-        int macroblock_address;
-
-        int dct_dc_y_past = 1024;
-        int dct_dc_cb_past = 1024;
-        int dct_dc_cr_past = 1024;
-
-        int past_intra_address = -2;
-        int mv_right_for_prev = 0;
-        int mv_down_for_prev = 0;
-    };
-
     SequenceHeader read_sequence_header(std::span<std::byte>& data);
     GroupOfPicturesHeader read_gop_header(std::span<std::byte>& data);
     PictureHeader read_picture_header(std::span<std::byte>& data);

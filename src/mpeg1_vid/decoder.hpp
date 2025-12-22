@@ -29,8 +29,6 @@ namespace mpeg1 {
         mpeg1::GroupOfPicturesHeader _gop;
         mpeg1::PictureHeader _picture;
 
-        mpeg1::BlockContext _frame_context;
-
     public:
         Decoder() {}
         ~Decoder() {}
