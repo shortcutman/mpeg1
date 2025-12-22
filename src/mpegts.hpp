@@ -57,5 +57,5 @@ namespace pg1 {
     PAT read_pat_pkt(std::span<std::byte>& data);
     PMT read_pmt_pkt(std::span<std::byte>& data);
 
-    void loop_ts_data(std::span<std::byte>& data, std::vector<std::byte>& video_es);
+    void loop_ts_data(std::span<std::byte>& data, std::vector<std::byte>& video_es, std::vector<std::byte>& audio_es);
 }

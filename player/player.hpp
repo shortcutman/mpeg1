@@ -20,6 +20,7 @@ namespace player {
     private:
         NS::SharedPtr<MTL::Texture> _texture;
         std::vector<std::byte> _data;
+        std::vector<std::byte> _audio_data;
         mpeg1::Decoder _decoder;
         std::optional<SDL_TimerID> _timer;
 

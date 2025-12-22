@@ -51,8 +51,8 @@ int main(int argc, char** argv) {
     std::vector<std::byte> data = read_file(input_filepath);
     auto data_span = std::span{data};
 
-    std::vector<std::byte> video_es;
-    pg1::loop_ts_data(data_span, video_es);
+    std::vector<std::byte> video_es, audio_es;
+    pg1::loop_ts_data(data_span, video_es, audio_es);
 
     // dump_file(video_es, "/tmp/danpg1/video.mpg");
 

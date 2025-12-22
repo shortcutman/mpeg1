@@ -60,7 +60,7 @@ bool player::Player::open(std::string filepath) {
 
     auto data_span = std::span{data};
 
-    pg1::loop_ts_data(data_span, _data);
+    pg1::loop_ts_data(data_span, _data, _audio_data);
     _decoder.set_data(_data);
     auto first_frame = _decoder.next_frame();
     if (first_frame.has_value()) {

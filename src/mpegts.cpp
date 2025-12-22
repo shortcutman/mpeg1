@@ -146,12 +146,13 @@ pg1::PMT pg1::read_pmt_pkt(std::span<std::byte>& data) {
     return pmt;
 }
 
-void pg1::loop_ts_data(std::span<std::byte>& data, std::vector<std::byte>& video_es) {
+void pg1::loop_ts_data(std::span<std::byte>& data, std::vector<std::byte>& video_es, std::vector<std::byte>& audio_es) {
     std::map<uint16_t, size_t> pid_map;
     std::optional<PAT> pat;
     std::optional<uint16_t> pmt_pid;
     bool displayed_pmt = false;
     std::optional<uint16_t> video_es_pid;
+    std::optional<uint16_t> audio_es_pid;
 
     for (size_t i = 0; i < data.size(); i++) {
         if (data[i] == std::byte{0x47}) {
@@ -195,10 +196,15 @@ void pg1::loop_ts_data(std::span<std::byte>& data, std::vector<std::byte>& video
                     if (es.stream_type == 2) {
                         video_es_pid = es.elementary_pid;
                         std::println("\tLogged as video ES.");
+                    } else if (es.stream_type == 3) {
+                        audio_es_pid = es.elementary_pid;
+                        std::println("\tLogged as audio ES.");
                     }
                 }
             } else if (video_es_pid && header.pid == *video_es_pid) {
                 video_es.insert(video_es.end(), ts_pkt_span.begin(), ts_pkt_span.begin() + ts_pkt_span.size());
+            } else if (audio_es_pid && header.pid == *audio_es_pid) {
+                audio_es.insert(audio_es.end(), ts_pkt_span.begin(), ts_pkt_span.begin() + ts_pkt_span.size());
             }
         }
 
@@ -208,6 +214,11 @@ void pg1::loop_ts_data(std::span<std::byte>& data, std::vector<std::byte>& video
     std::println("TS Packets found");
     for (auto& v : pid_map) {
         std::println("\tPID: {}, Count: {}", v.first, v.second);
+        if (video_es_pid && v.first == *video_es_pid) {
+            std::println("\t\tVideo bytes: {}", video_es.size());
+        } else if (audio_es_pid && v.first == *audio_es_pid) {
+            std::println("\t\tAudio bytes: {}", audio_es.size());
+        }
     }
 
 }
