@@ -229,7 +229,7 @@ std::array<int, 64> mpeg1::SliceDecoder::read_block(util::bitspan& data, size_t 
         auto index = mpeg1::ZIGZAG_INDEX[dct_i];
         dct_i++;
 
-        dct_recon[index] = (2 * next.level * _slice.quantizer_scale * _sequence.non_intra_quantizer_matrix[index]) / 16;
+        dct_recon[index] = ((2 * next.level + sign(next.level)) * _slice.quantizer_scale * _sequence.non_intra_quantizer_matrix[index]) / 16;
 
         if ((dct_recon[index] & 1) == 0) {
             dct_recon[index] -= sign(dct_recon[index]);
