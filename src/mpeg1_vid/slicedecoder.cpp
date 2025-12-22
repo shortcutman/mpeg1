@@ -48,6 +48,12 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
                 _mv_down_for_prev = 0;
             }
 
+            if (!macroblock.type.intra || macroblock.address_increment > 1) {
+                _dct_dc_y_past = 1024;
+                _dct_dc_cb_past = 1024;
+                _dct_dc_cr_past = 1024;
+            }
+
             if (macroblock.type.intra) {
                 auto block = read_intra_blocks(bits);
                 copy_mb_to_image(_macroblock_address, block, destination);
@@ -91,7 +97,7 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
 void mpeg1::SliceDecoder::reset() {
     _dct_dc_y_past = 1024;
     _dct_dc_cb_past = 1024;
-    _dct_dc_cr_past = 10;
+    _dct_dc_cr_past = 1024;
     _past_intra_address = -2;
     _mv_right_for_prev = 0;
     _mv_down_for_prev = 0;
