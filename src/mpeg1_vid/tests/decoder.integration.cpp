@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 
 #include "mpeg1_vid/decoder.hpp"
-#include "mpeg1_vid/decode.hpp"
 
 #include "util.hpp"
 

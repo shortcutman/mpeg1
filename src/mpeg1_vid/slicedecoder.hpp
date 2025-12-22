@@ -38,5 +38,8 @@ namespace mpeg1 {
     protected:
         std::array<image::Colour, 256> read_intra_blocks(util::bitspan& data);
         std::array<int, 64> read_block(util::bitspan& data, size_t block_index);
+
+        //for unit tests
+        void set_slice(mpeg1::SliceHeader slice);
     };
 }

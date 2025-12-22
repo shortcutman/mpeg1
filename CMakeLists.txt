@@ -15,7 +15,6 @@ add_library(libdanpg1
     src/idct.cpp
     src/mpeg1_vid/constants.cpp
     src/mpeg1_vid/copy.cpp
-    src/mpeg1_vid/decode.cpp
     src/mpeg1_vid/decoder.cpp
     src/mpeg1_vid/mpeg1.cpp
     src/mpeg1_vid/slicedecoder.cpp
@@ -44,10 +43,10 @@ enable_testing()
 
 add_executable(danpg1_tests
     src/mpeg1_vid/tests/copy.tests.cpp
-    src/mpeg1_vid/tests/decode.tests.cpp
     src/mpeg1_vid/tests/decoder.tests.cpp
     src/mpeg1_vid/tests/decoder.integration.cpp
     src/mpeg1_vid/tests/mpeg1.tests.cpp
+    src/mpeg1_vid/tests/slicedecoder.tests.cpp
     src/mpeg1_vid/tests/vlctables.tests.cpp
     src/tests/bitspan.tests.cpp
     src/tests/mpegts.tests.cpp

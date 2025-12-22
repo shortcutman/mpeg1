@@ -25,51 +25,55 @@ namespace {
     }
 }
 
-int mpeg1::SliceDecoder::decode(std::span<std::byte>& data,  const image::Frame& source, image::Frame& destination) {
+int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& source, image::Frame& destination) {
     util::bitspan bits(data);
 
     _slice = mpeg1::read_slice_header(bits);
     _previous_macroblock_address = (_slice.vertical_position - 1) * _sequence.mb_width() - 1;
 
-    while (!peak_code(bits)) {
-        auto macroblock = mpeg1::read_macroblock(bits, _picture);
-        _macroblock_address = _previous_macroblock_address + macroblock.address_increment;
+    try {
+        while (!peak_code(bits)) {
+            auto macroblock = mpeg1::read_macroblock(bits, _picture);
+            _macroblock_address = _previous_macroblock_address + macroblock.address_increment;
 
-        if (!macroblock.type.motion_forward || macroblock.address_increment > 1) {
-            _mv_right_for_prev = 0;
-            _mv_down_for_prev = 0;
-        }
-
-        if (macroblock.type.intra) {
-            auto block = read_intra_blocks(bits);
-            copy_mb_to_image(_macroblock_address, block, destination);
-        } else {
-            auto mv = mpeg1::calc_motion_vectors(_picture, macroblock, std::make_tuple(_mv_right_for_prev, _mv_down_for_prev));
-            std::tie(_mv_right_for_prev, _mv_down_for_prev) = mv;
-            auto block = copy_block_mv_from_image(_macroblock_address, mv, source);
-            
-            if (macroblock.type.pattern) {
-                for (size_t i = 0; i < 6; i++) {
-                    if (!mpeg1::check_cbp(macroblock.coded_block_pattern, i)) {
-                        continue;
-                    }
-
-                    auto dct = read_block(bits, i);
-
-                    if (i < 4) {
-                        assign_to_y(dct, block, i);
-                    } else if (i == 4) {
-                        assign_to_cb(dct, block);
-                    } else if (i == 5) {
-                        assign_to_cr(dct, block);
-                    }
-                }
+            if (!macroblock.type.motion_forward || macroblock.address_increment > 1) {
+                _mv_right_for_prev = 0;
+                _mv_down_for_prev = 0;
             }
 
-            copy_mb_to_image(_macroblock_address, block, destination);
-        }
+            if (macroblock.type.intra) {
+                auto block = read_intra_blocks(bits);
+                copy_mb_to_image(_macroblock_address, block, destination);
+            } else {
+                auto mv = mpeg1::calc_motion_vectors(_picture, macroblock, std::make_tuple(_mv_right_for_prev, _mv_down_for_prev));
+                std::tie(_mv_right_for_prev, _mv_down_for_prev) = mv;
+                auto block = copy_block_mv_from_image(_macroblock_address, mv, source);
+                
+                if (macroblock.type.pattern) {
+                    for (size_t i = 0; i < 6; i++) {
+                        if (!mpeg1::check_cbp(macroblock.coded_block_pattern, i)) {
+                            continue;
+                        }
 
-        _previous_macroblock_address = _macroblock_address;
+                        auto dct = read_block(bits, i);
+
+                        if (i < 4) {
+                            assign_to_y(dct, block, i);
+                        } else if (i == 4) {
+                            assign_to_cb(dct, block);
+                        } else if (i == 5) {
+                            assign_to_cr(dct, block);
+                        }
+                    }
+                }
+
+                copy_mb_to_image(_macroblock_address, block, destination);
+            }
+
+            _previous_macroblock_address = _macroblock_address;
+        }
+    } catch (std::exception& e) {
+        std::println("Experienced exception: {}", e.what());
     }
 
     data = data.subspan(bits.bytes_read());
@@ -230,4 +234,8 @@ std::array<int, 64> mpeg1::SliceDecoder::read_block(util::bitspan& data, size_t 
     }
 
     return dct_recon;
+}
+
+void mpeg1::SliceDecoder::set_slice(mpeg1::SliceHeader slice) {
+    _slice = slice;
 }
