@@ -149,4 +149,6 @@ TEST(AudioDecoder, read_scale_factors) {
         EXPECT_EQ(scale_factors[1][i][1], 0);
         EXPECT_EQ(scale_factors[1][i][2], 0);
     }
+
+    EXPECT_EQ(bits.bits_read(), 192);
 }
