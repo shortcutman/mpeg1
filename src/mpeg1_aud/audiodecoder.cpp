@@ -102,9 +102,7 @@ mpeg1_aud::ChannelValues mpeg1_aud::read_allocations(util::bitspan& data, FrameH
         throw std::runtime_error("Only stereo supported.");
     }
 
-    ChannelValues allocation;
-    std::fill(allocation[0].begin() + SBLIMIT, allocation[0].end(), 0);
-    std::fill(allocation[1].begin() + SBLIMIT, allocation[1].end(), 0);
+    ChannelValues allocation{};
     for (size_t sb = 0; sb < SBLIMIT; sb++) {
         auto nbal = Bits_For_Subband_B2a[sb];
         allocation[0][sb] = Level_For_Index_Subband[sb][data.read_bits_be(nbal)];
@@ -115,9 +113,7 @@ mpeg1_aud::ChannelValues mpeg1_aud::read_allocations(util::bitspan& data, FrameH
 }
 
 mpeg1_aud::ChannelValues mpeg1_aud::read_scfsi(util::bitspan& data, ChannelValues& allocations) {
-    ChannelValues scfsi;
-    std::fill(scfsi[0].begin(), scfsi[0].end(), 0);
-    std::fill(scfsi[1].begin(), scfsi[1].end(), 0);
+    ChannelValues scfsi{};
 
     for (size_t sb = 0; sb < SBLIMIT; sb++) {
         for (size_t ch = 0; ch < 2; ch++) {
@@ -128,4 +124,34 @@ mpeg1_aud::ChannelValues mpeg1_aud::read_scfsi(util::bitspan& data, ChannelValue
     }
 
     return scfsi;
+}
+
+mpeg1_aud::ScaleFactors mpeg1_aud::read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi) {
+    ScaleFactors scalefactors{};
+
+    for (size_t sb = 0; sb < SBLIMIT; sb++) {
+        for (size_t ch = 0; ch < 2; ch++) {
+            if (allocations[ch][sb]) {
+                if (scfsi[ch][sb] == 0) {
+                    scalefactors[ch][sb][0] = data.read_bits_be(6);
+                    scalefactors[ch][sb][1] = data.read_bits_be(6);
+                    scalefactors[ch][sb][2] = data.read_bits_be(6);
+                } else if (scfsi[ch][sb] == 1) {
+                    scalefactors[ch][sb][0] = data.read_bits_be(6);
+                    scalefactors[ch][sb][1] = scalefactors[ch][sb][0];
+                    scalefactors[ch][sb][2] = data.read_bits_be(6);
+                } else if (scfsi[ch][sb] == 2) {
+                    scalefactors[ch][sb][0] = data.read_bits_be(6);
+                    scalefactors[ch][sb][1] = scalefactors[ch][sb][0];
+                    scalefactors[ch][sb][2] = scalefactors[ch][sb][0];
+                } else if (scfsi[ch][sb] == 3) {
+                    scalefactors[ch][sb][0] = data.read_bits_be(6);
+                    scalefactors[ch][sb][1] = data.read_bits_be(6);
+                    scalefactors[ch][sb][2] = scalefactors[ch][sb][1];
+                }
+            }
+        }
+    }
+
+    return scalefactors;
 }

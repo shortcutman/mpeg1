@@ -37,4 +37,7 @@ namespace mpeg1_aud {
 
     ChannelValues read_allocations(util::bitspan& data, FrameHeader& header);
     ChannelValues read_scfsi(util::bitspan& data, ChannelValues& allocations);
+
+    typedef std::array<std::array<std::array<uint32_t, 3>, 32>, 2> ScaleFactors;
+    ScaleFactors read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi);
 }

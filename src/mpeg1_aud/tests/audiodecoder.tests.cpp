@@ -109,3 +109,44 @@ TEST(AudioDecoder, read_scfsi) {
     EXPECT_TRUE(std::equal(expected[1].begin(), expected[1].end(), scfsi[1].begin()));
     EXPECT_EQ(bits.bits_read(), 64);
 }
+
+TEST(AudioDecoder, read_scale_factors) {
+    auto audio = read_file("../src/mpeg1_aud/tests/data/audio.mp2");
+    auto span = std::span(audio);
+    mpeg1_aud::align_to_sync(span);
+    span = span.subspan(4 + 22 + 8); //skip frame header and bit allocation
+
+    mpeg1_aud::ChannelValues allocations{{
+        {{31, 15, 15, 7, 3, 9, 5, 3, 3, 3, 5, 5, 3, 5, 7, 3,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        {{31, 15, 15, 5, 3, 7, 5, 3, 3, 3, 3, 3, 3, 3, 5, 3,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    }};
+    mpeg1_aud::ChannelValues scfsi{{
+        {{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        {{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    }};
+
+    util::bitspan bits(span);
+    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi);
+
+    for (size_t i = 0; i < 16; i++) {
+        EXPECT_EQ(scale_factors[0][i][0], 62);
+        EXPECT_EQ(scale_factors[0][i][1], 62);
+        EXPECT_EQ(scale_factors[0][i][2], 62);
+        EXPECT_EQ(scale_factors[1][i][0], 62);
+        EXPECT_EQ(scale_factors[1][i][1], 62);
+        EXPECT_EQ(scale_factors[1][i][2], 62);
+    }
+
+    for (size_t i = 16; i < 32; i++) {
+        EXPECT_EQ(scale_factors[0][i][0], 0);
+        EXPECT_EQ(scale_factors[0][i][1], 0);
+        EXPECT_EQ(scale_factors[0][i][2], 0);
+        EXPECT_EQ(scale_factors[1][i][0], 0);
+        EXPECT_EQ(scale_factors[1][i][1], 0);
+        EXPECT_EQ(scale_factors[1][i][2], 0);
+    }
+}
