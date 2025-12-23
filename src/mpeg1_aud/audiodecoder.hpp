@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "bitspan.hpp"
+
 #include <span>
 
 namespace mpeg1_aud {
@@ -29,5 +31,8 @@ namespace mpeg1_aud {
 
     FrameHeader read_frame_header(std::span<std::byte>& data);
     
-    void read_audio_data(std::span<std::byte>& data);
+    void read_audio_data(std::span<std::byte>& data, FrameHeader& header);
+
+    typedef std::array<std::array<uint32_t, 32>, 2> Allocations;
+    Allocations read_allocations(util::bitspan& data, FrameHeader& header);
 }

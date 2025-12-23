@@ -7,6 +7,9 @@
 
 #include "bitspan.hpp"
 
+#include <algorithm>
+#include <vector>
+
 void mpeg1_aud::align_to_sync(std::span<std::byte>& data) {
     util::bitspan bits(data);
 
@@ -38,4 +41,74 @@ mpeg1_aud::FrameHeader mpeg1_aud::read_frame_header(std::span<std::byte>& data) 
     data = data.subspan(bits.bytes_read());
 
     return header;
+}
+
+namespace {
+    std::array<uint32_t, 32> Bits_For_Subband_B2a = {
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+        2, 2, 2, 2,
+        0, 0, 0, 0, 0
+    };
+    std::array<std::vector<int>, 32> Level_For_Index_Subband = {{
+        {{0, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65525}},
+        {{0, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65525}},
+        {{0, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  63, 127,  255,  511, 1023, 2047,  4095,  8191, 65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  63, 127,  255,  511, 1023, 2047,  4095,  8191, 65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  63, 127,  255,  511, 1023, 2047,  4095,  8191, 65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  63, 127,  255,  511, 1023, 2047,  4095,  8191, 65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  63, 127,  255,  511, 1023, 2047,  4095,  8191, 65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  63, 127,  255,  511, 1023, 2047,  4095,  8191, 65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  63, 127,  255,  511, 1023, 2047,  4095,  8191, 65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  63, 127,  255,  511, 1023, 2047,  4095,  8191, 65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  7,  9, 15,  31,  65525}},
+        {{0, 3, 5,  65525}},
+        {{0, 3, 5,  65525}},
+        {{0, 3, 5,  65525}},
+        {{0, 3, 5,  65525}},
+        {{}},
+        {{}},
+        {{}},
+        {{}},
+        {{}}
+    }};
+    const uint32_t SBLIMIT = 27; //table b.2a
+}
+
+void mpeg1_aud::read_audio_data(std::span<std::byte>& data, FrameHeader& header) {
+    if (header.mode != 0) {
+        return; //only stereo right now
+    }
+
+    util::bitspan bits(data);
+    auto allocations = read_allocations(bits, header);
+}
+
+mpeg1_aud::Allocations mpeg1_aud::read_allocations(util::bitspan& data, FrameHeader& header) {
+    if (header.mode != 0) {
+        throw std::runtime_error("Only stereo supported.");
+    }
+
+    Allocations allocation;
+    std::fill(allocation[0].begin() + SBLIMIT, allocation[0].end(), 0);
+    std::fill(allocation[1].begin() + SBLIMIT, allocation[1].end(), 0);
+    for (size_t sb = 0; sb < SBLIMIT; sb++) {
+        auto nbal = Bits_For_Subband_B2a[sb];
+        allocation[0][sb] = Level_For_Index_Subband[sb][data.read_bits_be(nbal)];
+        allocation[1][sb] = Level_For_Index_Subband[sb][data.read_bits_be(nbal)];
+    }
+
+    return allocation;
 }
