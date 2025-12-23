@@ -94,14 +94,15 @@ void mpeg1_aud::read_audio_data(std::span<std::byte>& data, FrameHeader& header)
 
     util::bitspan bits(data);
     auto allocations = read_allocations(bits, header);
+    (void)allocations;
 }
 
-mpeg1_aud::Allocations mpeg1_aud::read_allocations(util::bitspan& data, FrameHeader& header) {
+mpeg1_aud::ChannelValues mpeg1_aud::read_allocations(util::bitspan& data, FrameHeader& header) {
     if (header.mode != 0) {
         throw std::runtime_error("Only stereo supported.");
     }
 
-    Allocations allocation;
+    ChannelValues allocation;
     std::fill(allocation[0].begin() + SBLIMIT, allocation[0].end(), 0);
     std::fill(allocation[1].begin() + SBLIMIT, allocation[1].end(), 0);
     for (size_t sb = 0; sb < SBLIMIT; sb++) {
@@ -111,4 +112,20 @@ mpeg1_aud::Allocations mpeg1_aud::read_allocations(util::bitspan& data, FrameHea
     }
 
     return allocation;
+}
+
+mpeg1_aud::ChannelValues mpeg1_aud::read_scfsi(util::bitspan& data, ChannelValues& allocations) {
+    ChannelValues scfsi;
+    std::fill(scfsi[0].begin(), scfsi[0].end(), 0);
+    std::fill(scfsi[1].begin(), scfsi[1].end(), 0);
+
+    for (size_t sb = 0; sb < SBLIMIT; sb++) {
+        for (size_t ch = 0; ch < 2; ch++) {
+            if (allocations[ch][sb]) {
+                scfsi[ch][sb] = data.read_bits_be(2);
+            }
+        }
+    }
+
+    return scfsi;
 }

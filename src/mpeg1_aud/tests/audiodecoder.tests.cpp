@@ -70,7 +70,7 @@ TEST(AudioDecoder, read_allocations) {
     util::bitspan bits(span);
     auto allocations = mpeg1_aud::read_allocations(bits, header);
 
-    mpeg1_aud::Allocations expected{{
+    mpeg1_aud::ChannelValues expected{{
         {{31, 15, 15, 7, 3, 9, 5, 3, 3, 3, 5, 5, 3, 5, 7, 3,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
         {{31, 15, 15, 5, 3, 7, 5, 3, 3, 3, 3, 3, 3, 3, 5, 3,
@@ -80,4 +80,32 @@ TEST(AudioDecoder, read_allocations) {
     EXPECT_TRUE(std::equal(expected[0].begin(), expected[0].end(), allocations[0].begin()));
     EXPECT_TRUE(std::equal(expected[1].begin(), expected[1].end(), allocations[1].begin()));
     EXPECT_EQ(bits.bits_read(), 176);
+}
+
+TEST(AudioDecoder, read_scfsi) {
+    auto audio = read_file("../src/mpeg1_aud/tests/data/audio.mp2");
+    auto span = std::span(audio);
+    mpeg1_aud::align_to_sync(span);
+    span = span.subspan(4 + 22); //skip frame header and bit allocation
+
+    mpeg1_aud::ChannelValues allocations{{
+        {{31, 15, 15, 7, 3, 9, 5, 3, 3, 3, 5, 5, 3, 5, 7, 3,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        {{31, 15, 15, 5, 3, 7, 5, 3, 3, 3, 3, 3, 3, 3, 5, 3,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    }};
+
+    util::bitspan bits(span);
+    auto scfsi = mpeg1_aud::read_scfsi(bits, allocations);
+
+    mpeg1_aud::ChannelValues expected{{
+        {{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        {{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    }};
+
+    EXPECT_TRUE(std::equal(expected[0].begin(), expected[0].end(), scfsi[0].begin()));
+    EXPECT_TRUE(std::equal(expected[1].begin(), expected[1].end(), scfsi[1].begin()));
+    EXPECT_EQ(bits.bits_read(), 64);
 }

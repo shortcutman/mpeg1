@@ -33,6 +33,8 @@ namespace mpeg1_aud {
     
     void read_audio_data(std::span<std::byte>& data, FrameHeader& header);
 
-    typedef std::array<std::array<uint32_t, 32>, 2> Allocations;
-    Allocations read_allocations(util::bitspan& data, FrameHeader& header);
+    typedef std::array<std::array<uint32_t, 32>, 2> ChannelValues;
+
+    ChannelValues read_allocations(util::bitspan& data, FrameHeader& header);
+    ChannelValues read_scfsi(util::bitspan& data, ChannelValues& allocations);
 }
