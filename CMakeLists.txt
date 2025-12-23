@@ -13,6 +13,7 @@ add_library(libdanpg1
     src/colour.cpp
     src/mpegts.cpp
     src/idct.cpp
+    src/mpeg1_aud/audiodecoder.cpp
     src/mpeg1_vid/constants.cpp
     src/mpeg1_vid/copy.cpp
     src/mpeg1_vid/decoder.cpp
@@ -42,6 +43,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(danpg1_tests
+    src/mpeg1_aud/tests/audiodecoder.tests.cpp
     src/mpeg1_vid/tests/copy.tests.cpp
     src/mpeg1_vid/tests/decoder.tests.cpp
     src/mpeg1_vid/tests/decoder.integration.cpp
