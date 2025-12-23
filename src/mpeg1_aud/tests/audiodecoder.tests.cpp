@@ -79,4 +79,5 @@ TEST(AudioDecoder, read_allocations) {
 
     EXPECT_TRUE(std::equal(expected[0].begin(), expected[0].end(), allocations[0].begin()));
     EXPECT_TRUE(std::equal(expected[1].begin(), expected[1].end(), allocations[1].begin()));
+    EXPECT_EQ(bits.bits_read(), 176);
 }
