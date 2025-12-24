@@ -32,6 +32,16 @@ target_link_libraries(
     libdanpg1
 )
 
+add_executable(danpg1_audiotest
+    src/audiotest.cpp
+)
+
+target_link_libraries(
+    danpg1_audiotest
+    libdanpg1
+    SDL3::SDL3
+)
+
 include(FetchContent)
 FetchContent_Declare(
     googletest
