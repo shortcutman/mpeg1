@@ -357,7 +357,7 @@ mpeg1_aud::DecodedSamples mpeg1_aud::decode_samples(util::bitspan& data, Channel
                     }
                 }
             }
-            decoded_ptr += 96;
+            decoded_ptr += 184;
         }
     }
 
