@@ -183,7 +183,7 @@ mpeg1_aud::ScaleFactors mpeg1_aud::read_scale_factors(util::bitspan& data, Chann
     return scalefactors;
 }
 
-std::array<int, 3> mpeg1_aud::read_samples(util::bitspan& data, uint32_t level, uint32_t scale_factor) {
+std::array<int, 3> mpeg1_aud::read_samples(util::bitspan& data, uint32_t level, int32_t scale_factor) {
     if (level == 0) {
         return std::array<int, 3>{};
     }
@@ -211,11 +211,11 @@ std::array<int, 3> mpeg1_aud::read_samples(util::bitspan& data, uint32_t level, 
         samples[2] = data.read_bits_be(quant_class.bits_per_codeword);
     }
 
-    uint32_t scale = 65536 / (level + 1);
+    int scale = 65536 / (level + 1);
     level = ((level + 1) >> 1) - 1;
 
     for (size_t i = 0; i < 3; i++) {
-        auto val = (level - samples[i]) * scale;
+        int val = (level - samples[i]) * scale;
         samples[i] = (val * (scale_factor >> 12) +
                      ((val * (scale_factor & 4095) + 2048) >> 12))
                      >> 12;
