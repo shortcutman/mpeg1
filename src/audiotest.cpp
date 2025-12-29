@@ -16,6 +16,10 @@
 #include "mpegts.hpp"
 #include "mpeg1_aud/audiodecoder.hpp"
 
+// extern "C" {
+//     #include "mpeg1_aud/tests/kjmp2.h"
+// }
+
 namespace {
 
 std::vector<std::byte> read_file(const std::string& filename) {
@@ -83,32 +87,30 @@ int main(int argc, char** argv) {
 
     int running = 1;
 
+    std::span<std::byte> span = audio_es;
+
+    // kjmp2_context_t kctx;
+    // kjmp2_init(&kctx);
+    
     while (running) {
-        std::span<std::byte> span = audio_es;
-        mpeg1_aud::align_to_sync(span);
+        // mpeg1_aud::align_to_sync(span);
+        // std::array<signed short, 1152 * 2> frame;
+        // auto bytes_read = kjmp2_decode_frame(&kctx, reinterpret_cast<unsigned char*>(span.data()), frame.data());
+        // span = span.subspan(bytes_read);
+        // if (bytes_read > 0)
+        //     if (!SDL_PutAudioStreamData(stream, frame.data(), frame.size() * 2)) {
+        //         SDL_Log("Failed to push data: %s", SDL_GetError());
+        //         running = 0;
+        //     }
 
-        auto header = mpeg1_aud::read_frame_header(span);
-        util::bitspan bits(span);
-        auto allocations = mpeg1_aud::read_allocations(bits, header);
-        auto scfsi = mpeg1_aud::read_scfsi(bits, allocations);
-        auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi);
-        auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors);
-
-        // --- Push Data ---
-        // Pass the size in BYTES (sizeof handles this automatically)
-        if (!SDL_PutAudioStreamData(stream, decoded.data(), decoded.size() * 2)) {
-            SDL_Log("Failed to push data: %s", SDL_GetError());
-            running = 0;
+        auto queued_bytes = SDL_GetAudioStreamQueued(stream);
+        if (queued_bytes < (spec.freq * sizeof(short))) {
+            auto d = mpeg1_aud::get_next_frame(span);
+            if (!SDL_PutAudioStreamData(stream, d.data(), d.size() * 2)) {
+                SDL_Log("Failed to push data: %s", SDL_GetError());
+                running = 0;
+            }
         }
-
-        // // --- Throttle ---
-        // int queued_bytes = SDL_GetAudioStreamQueued(stream);
-        // int bytes_per_sec = SAMPLE_RATE * CHANNELS * sizeof(int16_t);
-        
-        // // If we have more than 0.5s buffered, wait
-        // if (queued_bytes > (bytes_per_sec * 0.5)) {
-        //     SDL_Delay(10); 
-        // }
 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
