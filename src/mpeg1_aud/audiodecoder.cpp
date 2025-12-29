@@ -46,13 +46,13 @@ mpeg1_aud::FrameHeader mpeg1_aud::read_frame_header(std::span<std::byte>& data) 
 }
 
 namespace {
-    std::array<uint32_t, 32> Bits_For_Subband_B2a = {
+    std::array<int32_t, 32> Bits_For_Subband_B2a = {
         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
         3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
         2, 2, 2, 2,
         0, 0, 0, 0, 0
     };
-    std::array<std::vector<int>, 32> Level_For_Index_Subband = {{
+    std::array<std::vector<int32_t>, 32> Level_For_Index_Subband = {{
         {{0, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65525}},
         {{0, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65525}},
         {{0, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65525}},
@@ -86,14 +86,14 @@ namespace {
         {{}},
         {{}}
     }};
-    const uint32_t SBLIMIT = 27; //table b.2a
+    const int32_t SBLIMIT = 27; //table b.2a
 
     struct QuantClass {
         bool grouping;
         uint16_t bits_per_codeword;
     };
 
-    std::map<uint32_t, QuantClass> QuantClasses = {
+    std::map<int32_t, QuantClass> QuantClasses = {
         {3, {true, 5}},
         {5, {true, 7}},
         {7, {false, 3}},
@@ -112,16 +112,6 @@ namespace {
         {32767, {false, 15}},
         {65535, {false, 16}}
     };
-}
-
-void mpeg1_aud::read_audio_data(std::span<std::byte>& data, FrameHeader& header) {
-    if (header.mode != 0) {
-        return; //only stereo right now
-    }
-
-    util::bitspan bits(data);
-    auto allocations = read_allocations(bits, header);
-    (void)allocations;
 }
 
 mpeg1_aud::ChannelValues mpeg1_aud::read_allocations(util::bitspan& data, FrameHeader& header) {
@@ -183,7 +173,7 @@ mpeg1_aud::ScaleFactors mpeg1_aud::read_scale_factors(util::bitspan& data, Chann
     return scalefactors;
 }
 
-std::array<int, 3> mpeg1_aud::read_samples(util::bitspan& data, uint32_t level, int32_t scale_factor) {
+std::array<int32_t, 3> mpeg1_aud::read_samples(util::bitspan& data, int32_t level, int32_t scale_factor) {
     if (level == 0) {
         return std::array<int, 3>{};
     }
@@ -323,8 +313,8 @@ mpeg1_aud::DecodedSamples mpeg1_aud::decode_samples(util::bitspan& data, Channel
             }
 
             for (size_t sIdx = 0; sIdx < 3; sIdx++) { // sample index for each in the granule
-                Voffs = (Voffs - 64) & 1024;
-                auto table_idx = Voffs;
+                Voffs = (Voffs - 64) & 1023;
+                int32_t table_idx = Voffs;
 
                 for (size_t ch = 0; ch < 2; ch++) {
                     for (size_t i = 0; i < 64; i++) {

@@ -31,17 +31,15 @@ namespace mpeg1_aud {
 
     FrameHeader read_frame_header(std::span<std::byte>& data);
     
-    void read_audio_data(std::span<std::byte>& data, FrameHeader& header);
-
-    typedef std::array<std::array<uint32_t, 32>, 2> ChannelValues;
+    typedef std::array<std::array<int32_t, 32>, 2> ChannelValues;
 
     ChannelValues read_allocations(util::bitspan& data, FrameHeader& header);
     ChannelValues read_scfsi(util::bitspan& data, ChannelValues& allocations);
 
-    typedef std::array<std::array<std::array<uint32_t, 3>, 32>, 2> ScaleFactors;
+    typedef std::array<std::array<std::array<int32_t, 3>, 32>, 2> ScaleFactors;
     ScaleFactors read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi);
 
-    std::array<int, 3> read_samples(util::bitspan& data, uint32_t level, int32_t scale_factor);
+    std::array<int32_t, 3> read_samples(util::bitspan& data, int32_t level, int32_t scale_factor);
 
     typedef std::array<short, 1152 * 2> DecodedSamples;
 
