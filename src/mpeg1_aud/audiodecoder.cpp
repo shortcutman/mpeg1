@@ -297,11 +297,10 @@ namespace {
 }
 
 mpeg1_aud::DecodedSamples mpeg1_aud::decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& scale_factors) {
-
     DecodedSamples decoded;
     short* decoded_ptr = &decoded[0];
-    mpeg1_aud::Samples samp{};
-    std::array<std::array<int, 1024>, 2> V{};
+    std::array<std::array<std::array<int, 3>, 32>, 2> samp{};
+    static std::array<std::array<int, 1024>, 2> V{};
 
     //scfsi[sb] states frame is divided into 3 equal prats of 12 subband samples
     for (size_t part = 0; part < 3; part++) {
@@ -338,16 +337,17 @@ mpeg1_aud::DecodedSamples mpeg1_aud::decode_samples(util::bitspan& data, Channel
                     }
 
                     for (size_t j = 0; j < 32; j++) {
-                        auto sum = 0;
+                        int32_t sum = 0;
                         for (size_t i = 0; i < 16; i++) {
                             sum -= U[j + 32 * i];
                         }
+                        sum = (sum + 8) >> 4;
                         sum = std::clamp(sum, -32768, 32767);
                         decoded_ptr[(sIdx << 6) | (j << 1) | ch] = sum;
                     }
                 }
             }
-            decoded_ptr += 184;
+            decoded_ptr += 192; // 3 samples * 32 bands * 2 channel = 192 samples
         }
     }
 

@@ -53,8 +53,6 @@ TEST(AudioDecoder, read_frame_header) {
     EXPECT_EQ(header.mode_ext, 0); //subbands 4-31 in intensity_stereo, bound==4
 
     EXPECT_EQ(size_before_header - span.size(), 4);
-
-    mpeg1_aud::read_audio_data(span, header);
 }
 
 TEST(AudioDecoder, read_allocations) {
