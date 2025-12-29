@@ -380,15 +380,18 @@ mpeg1_aud::DecodedSamples mpeg1_aud::decode_samples(util::bitspan& data, Channel
 mpeg1_aud::DecodedSamples mpeg1_aud::get_next_frame(std::span<std::byte>& data) {
     mpeg1_aud::align_to_sync(data);
     auto header = mpeg1_aud::read_frame_header(data);
-    if (header.mode != 0) {
-        throw std::runtime_error("hmm");
+
+    uint32_t bound = 27, sblimit = 27, channels = 2;
+    if (header.mode == 0b11) {
+        channels = 1;
+        bound = header.mode_ext * 4 + 4;
     }
 
     util::bitspan bits(data);
-    auto allocations = mpeg1_aud::read_allocations(bits, 27, 27);
-    auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, 27, 2);
-    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi, 27, 2);
-    auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors, 27, 27);
+    auto allocations = mpeg1_aud::read_allocations(bits, bound, sblimit);
+    auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, sblimit, channels);
+    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi, sblimit, channels);
+    auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors, bound, sblimit);
 
     size_t frame_size = (144 * 128000) / 44100;
     if (header.padding_bit) {
