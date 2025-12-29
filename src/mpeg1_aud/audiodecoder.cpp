@@ -8,6 +8,7 @@
 #include "bitspan.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <map>
 #include <vector>
@@ -114,16 +115,22 @@ namespace {
     };
 }
 
-mpeg1_aud::ChannelValues mpeg1_aud::read_allocations(util::bitspan& data, FrameHeader& header) {
-    if (header.mode != 0) {
-        throw std::runtime_error("Only stereo supported.");
-    }
+mpeg1_aud::ChannelValues mpeg1_aud::read_allocations(util::bitspan& data, uint32_t bound, uint32_t sblimit) {
+    assert(bound <= sblimit);
 
     ChannelValues allocation{};
-    for (size_t sb = 0; sb < SBLIMIT; sb++) {
+
+    size_t sb = 0;
+    for (; sb < bound; sb++) {
         auto nbal = Bits_For_Subband_B2a[sb];
         allocation[0][sb] = Level_For_Index_Subband[sb][data.read_bits_be(nbal)];
         allocation[1][sb] = Level_For_Index_Subband[sb][data.read_bits_be(nbal)];
+    }
+
+    for (; sb < sblimit; sb++) {
+        auto nbal = Bits_For_Subband_B2a[sb];
+        allocation[0][sb] = Level_For_Index_Subband[sb][data.read_bits_be(nbal)];
+        allocation[1][sb] = allocation[0][sb];
     }
 
     return allocation;
@@ -362,7 +369,7 @@ mpeg1_aud::DecodedSamples mpeg1_aud::get_next_frame(std::span<std::byte>& data) 
     }
 
     util::bitspan bits(data);
-    auto allocations = mpeg1_aud::read_allocations(bits, header);
+    auto allocations = mpeg1_aud::read_allocations(bits, 27, 27);
     auto scfsi = mpeg1_aud::read_scfsi(bits, allocations);
     auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi);
     auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors);

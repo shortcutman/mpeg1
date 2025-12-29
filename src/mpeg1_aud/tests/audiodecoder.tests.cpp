@@ -61,12 +61,8 @@ TEST(AudioDecoder, read_allocations) {
     mpeg1_aud::align_to_sync(span);
     span = span.subspan(4); //skip frame header
 
-    mpeg1_aud::FrameHeader header{
-        .mode = 0
-    };
-
     util::bitspan bits(span);
-    auto allocations = mpeg1_aud::read_allocations(bits, header);
+    auto allocations = mpeg1_aud::read_allocations(bits, 27, 27);
 
     mpeg1_aud::ChannelValues expected{{
         {{31, 15, 15, 7, 3, 9, 5, 3, 3, 3, 5, 5, 3, 5, 7, 3,
