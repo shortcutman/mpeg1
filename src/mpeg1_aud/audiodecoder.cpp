@@ -376,7 +376,13 @@ mpeg1_aud::DecodedSamples mpeg1_aud::get_next_frame(std::span<std::byte>& data) 
     auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, 27, 2);
     auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi);
     auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors);
-    data = data.subspan(bits.bytes_read());
+
+    size_t frame_size = (144 * 128000) / 44100;
+    if (header.padding_bit) {
+        frame_size++;
+    }
+
+    data = data.subspan(frame_size - 4); // -4 is for frame header which is a consuming function
 
     return decoded;
 }
