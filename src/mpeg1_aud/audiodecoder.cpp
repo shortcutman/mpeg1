@@ -353,3 +353,20 @@ mpeg1_aud::DecodedSamples mpeg1_aud::decode_samples(util::bitspan& data, Channel
 
     return decoded;
 }
+
+mpeg1_aud::DecodedSamples mpeg1_aud::get_next_frame(std::span<std::byte>& data) {
+    mpeg1_aud::align_to_sync(data);
+    auto header = mpeg1_aud::read_frame_header(data);
+    if (header.mode != 0) {
+        throw std::runtime_error("hmm");
+    }
+
+    util::bitspan bits(data);
+    auto allocations = mpeg1_aud::read_allocations(bits, header);
+    auto scfsi = mpeg1_aud::read_scfsi(bits, allocations);
+    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi);
+    auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors);
+    data = data.subspan(bits.bytes_read());
+
+    return decoded;
+}

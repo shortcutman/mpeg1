@@ -45,5 +45,5 @@ namespace mpeg1_aud {
 
     DecodedSamples decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& sf);
 
-    
+    DecodedSamples get_next_frame(std::span<std::byte>& data);
 }
