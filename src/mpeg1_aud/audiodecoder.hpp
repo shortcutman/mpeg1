@@ -43,7 +43,7 @@ namespace mpeg1_aud {
 
     typedef std::array<short, 1152 * 2> DecodedSamples;
 
-    DecodedSamples decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& sf);
+    DecodedSamples decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& sf, uint32_t bound, uint32_t sblimit);
 
     DecodedSamples get_next_frame(std::span<std::byte>& data);
 }

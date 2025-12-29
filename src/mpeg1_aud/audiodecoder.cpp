@@ -87,7 +87,6 @@ namespace {
         {{}},
         {{}}
     }};
-    const int32_t SBLIMIT = 27; //table b.2a
 
     struct QuantClass {
         bool grouping;
@@ -312,7 +311,9 @@ namespace {
     };
 }
 
-mpeg1_aud::DecodedSamples mpeg1_aud::decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& scale_factors) {
+mpeg1_aud::DecodedSamples mpeg1_aud::decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& scale_factors, uint32_t bound, uint32_t sblimit) {
+    assert(bound <= sblimit);
+
     DecodedSamples decoded;
     short* decoded_ptr = &decoded[0];
     std::array<std::array<std::array<int, 3>, 32>, 2> samp{};
@@ -321,10 +322,16 @@ mpeg1_aud::DecodedSamples mpeg1_aud::decode_samples(util::bitspan& data, Channel
     //scfsi[sb] states frame is divided into 3 equal prats of 12 subband samples
     for (size_t part = 0; part < 3; part++) {
         for (size_t gr = 0; gr < 4; gr++) { // four granules per part
-            for (size_t sb = 0; sb < SBLIMIT; sb++) {
+            size_t sb = 0;
+            for (; sb < bound; sb++) {
                 for (size_t ch = 0; ch < 2; ch++) {
                     samp[ch][sb] = read_samples(data, allocations[ch][sb], scale_factors[ch][sb][part]);
                 }
+            }
+
+            for (; sb < sblimit; sb++) {
+                samp[0][sb] = read_samples(data, allocations[0][sb], scale_factors[0][sb][part]);
+                samp[1][sb] = samp[0][sb];
             }
 
             for (size_t sIdx = 0; sIdx < 3; sIdx++) { // sample index for each in the granule
@@ -381,7 +388,7 @@ mpeg1_aud::DecodedSamples mpeg1_aud::get_next_frame(std::span<std::byte>& data) 
     auto allocations = mpeg1_aud::read_allocations(bits, 27, 27);
     auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, 27, 2);
     auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi, 27, 2);
-    auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors);
+    auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors, 27, 27);
 
     size_t frame_size = (144 * 128000) / 44100;
     if (header.padding_bit) {
