@@ -124,7 +124,7 @@ TEST(AudioDecoder, read_scale_factors) {
     }};
 
     util::bitspan bits(span);
-    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi);
+    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi, 27, 2);
 
     for (size_t i = 0; i < 16; i++) {
         EXPECT_EQ(scale_factors[0][i][0], 62);

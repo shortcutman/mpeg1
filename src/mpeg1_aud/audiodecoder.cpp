@@ -153,11 +153,11 @@ mpeg1_aud::ChannelValues mpeg1_aud::read_scfsi(util::bitspan& data, ChannelValue
     return scfsi;
 }
 
-mpeg1_aud::ScaleFactors mpeg1_aud::read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi) {
+mpeg1_aud::ScaleFactors mpeg1_aud::read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi, uint32_t sblimit, uint32_t channels) {
     ScaleFactors scalefactors{};
-
-    for (size_t sb = 0; sb < SBLIMIT; sb++) {
-        for (size_t ch = 0; ch < 2; ch++) {
+    
+    for (size_t sb = 0; sb < sblimit; sb++) {
+        for (size_t ch = 0; ch < channels; ch++) {
             if (allocations[ch][sb]) {
                 if (scfsi[ch][sb] == 0) {
                     scalefactors[ch][sb][0] = data.read_bits_be(6);
@@ -175,6 +175,12 @@ mpeg1_aud::ScaleFactors mpeg1_aud::read_scale_factors(util::bitspan& data, Chann
                     scalefactors[ch][sb][0] = data.read_bits_be(6);
                     scalefactors[ch][sb][1] = data.read_bits_be(6);
                     scalefactors[ch][sb][2] = scalefactors[ch][sb][1];
+                }
+
+                if (channels == 1) {
+                    scalefactors[1][sb][0] = scalefactors[0][sb][0];
+                    scalefactors[1][sb][1] = scalefactors[0][sb][1];
+                    scalefactors[1][sb][2] = scalefactors[0][sb][2];
                 }
             }
         }
@@ -374,7 +380,7 @@ mpeg1_aud::DecodedSamples mpeg1_aud::get_next_frame(std::span<std::byte>& data) 
     util::bitspan bits(data);
     auto allocations = mpeg1_aud::read_allocations(bits, 27, 27);
     auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, 27, 2);
-    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi);
+    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi, 27, 2);
     auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors);
 
     size_t frame_size = (144 * 128000) / 44100;
