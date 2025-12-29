@@ -16,7 +16,7 @@
 void mpeg1_aud::align_to_sync(std::span<std::byte>& data) {
     util::bitspan bits(data);
 
-    while (bits.peek_bits_be(12) != 0xfff) {
+    while (bits.peek_bits_be(16) != 0xfffd) {
         bits.read_bits_be(4);
     }
 
