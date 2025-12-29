@@ -90,7 +90,7 @@ TEST(AudioDecoder, read_scfsi) {
     }};
 
     util::bitspan bits(span);
-    auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, 27, 27);
+    auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, 27, 2);
 
     mpeg1_aud::ChannelValues expected{{
         {{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
