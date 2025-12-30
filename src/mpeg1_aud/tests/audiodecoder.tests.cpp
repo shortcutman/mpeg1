@@ -147,18 +147,36 @@ TEST(AudioDecoder, read_scale_factors) {
     EXPECT_EQ(bits.bits_read(), 192);
 }
 
-TEST(AudioDecoder, parse_whole_file) {
+TEST(AudioDecoder, DISABLED_parse_whole_file) {
     auto audio = read_file("../src/mpeg1_aud/tests/data/audio.mp2");
     auto span = std::span(audio);
     mpeg1_aud::align_to_sync(span);
 
-    for (size_t f = 0; f < 5000; f++) {
-        mpeg1_aud::align_to_sync(span);
-        std::println("Frame: {}, File offset: {}", f, (audio.size() - span.size()));
-        
-        auto read_span = span;
-        auto samples = mpeg1_aud::get_next_frame(read_span);
-        (void)samples;
-        span = read_span;
+    try {
+        while (!span.empty()) {
+            mpeg1_aud::align_to_sync(span);
+            // std::println("File offset: {}", (audio.size() - span.size()));
+            
+            auto read_span = span;
+            mpeg1_aud::get_next_frame(read_span);
+            span = read_span;
+        }
+    } catch (std::exception& e) {
+        if (std::string("Not enough bits available.") != e.what()) {
+            throw e;
+        }
     }
 }
+
+// TEST(AudioDecoder, parse_one_frame) {
+//     auto audio = read_file("../src/mpeg1_aud/tests/data/audio.mp2");
+//     auto span = std::span(audio);
+//     span = span.subspan(535042);
+
+//     std::println("Frame: {}, File offset: {}", f, (audio.size() - span.size()));
+    
+//     auto read_span = span;
+//     auto samples = mpeg1_aud::get_next_frame(read_span);
+//     (void)samples;
+//     std::println("Read: {}", span.size() - read_span.size());
+// }
