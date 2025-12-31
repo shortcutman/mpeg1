@@ -25,6 +25,13 @@ std::vector<std::byte> read_file(const std::string& filename) {
 
 }
 
+class ToTestAudioDecoder : public mpeg1_aud::Decoder {
+public:
+    FRIEND_TEST(AudioDecoder, read_allocations);
+    FRIEND_TEST(AudioDecoder, read_scfsi);
+    FRIEND_TEST(AudioDecoder, read_scale_factors);
+};
+
 TEST(AudioDecoder, align_to_syncword) {
     auto audio = read_file("../src/mpeg1_aud/tests/data/audio.mp2");
     auto span = std::span(audio);
@@ -61,10 +68,11 @@ TEST(AudioDecoder, read_allocations) {
     mpeg1_aud::align_to_sync(span);
     span = span.subspan(4); //skip frame header
 
+    ToTestAudioDecoder d;
     util::bitspan bits(span);
-    auto allocations = mpeg1_aud::read_allocations(bits, 27, 27);
+    auto allocations = d.read_allocations(bits, 27, 27);
 
-    mpeg1_aud::ChannelValues expected{{
+    std::array<std::array<int32_t, 32>, 2> expected{{
         {{31, 15, 15, 7, 3, 9, 5, 3, 3, 3, 5, 5, 3, 5, 7, 3,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
         {{31, 15, 15, 5, 3, 7, 5, 3, 3, 3, 3, 3, 3, 3, 5, 3,
@@ -82,17 +90,18 @@ TEST(AudioDecoder, read_scfsi) {
     mpeg1_aud::align_to_sync(span);
     span = span.subspan(4 + 22); //skip frame header and bit allocation
 
-    mpeg1_aud::ChannelValues allocations{{
+    std::array<std::array<int32_t, 32>, 2> allocations{{
         {{31, 15, 15, 7, 3, 9, 5, 3, 3, 3, 5, 5, 3, 5, 7, 3,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
         {{31, 15, 15, 5, 3, 7, 5, 3, 3, 3, 3, 3, 3, 3, 5, 3,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
     }};
 
+    ToTestAudioDecoder d;
     util::bitspan bits(span);
-    auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, 27, 2);
+    auto scfsi = d.read_scfsi(bits, allocations, 27, 2);
 
-    mpeg1_aud::ChannelValues expected{{
+    std::array<std::array<int32_t, 32>, 2> expected{{
         {{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
         {{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -110,21 +119,22 @@ TEST(AudioDecoder, read_scale_factors) {
     mpeg1_aud::align_to_sync(span);
     span = span.subspan(4 + 22 + 8); //skip frame header and bit allocation
 
-    mpeg1_aud::ChannelValues allocations{{
+    std::array<std::array<int32_t, 32>, 2> allocations{{
         {{31, 15, 15, 7, 3, 9, 5, 3, 3, 3, 5, 5, 3, 5, 7, 3,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
         {{31, 15, 15, 5, 3, 7, 5, 3, 3, 3, 3, 3, 3, 3, 5, 3,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
     }};
-    mpeg1_aud::ChannelValues scfsi{{
+    std::array<std::array<int32_t, 32>, 2> scfsi{{
         {{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
         {{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
     }};
 
+    ToTestAudioDecoder d;
     util::bitspan bits(span);
-    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi, 27, 2);
+    auto scale_factors = d.read_scale_factors(bits, allocations, scfsi, 27, 2);
 
     for (size_t i = 0; i < 16; i++) {
         EXPECT_EQ(scale_factors[0][i][0], 62);

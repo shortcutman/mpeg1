@@ -31,21 +31,15 @@ namespace mpeg1_aud {
     void align_to_sync(std::span<std::byte>& data);
     FrameHeader read_frame_header(std::span<std::byte>& data);
     
-    typedef std::array<std::array<int32_t, 32>, 2> ChannelValues;
-
-    ChannelValues read_allocations(util::bitspan& data, uint32_t bound, uint32_t sblimit);
-    ChannelValues read_scfsi(util::bitspan& data, ChannelValues& allocations, uint32_t bound, uint32_t sblimit);
-
-    typedef std::array<std::array<std::array<int32_t, 3>, 32>, 2> ScaleFactors;
-    ScaleFactors read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi, uint32_t sblimit, uint32_t channels);
-
-    
-
     typedef std::array<short, 1152 * 2> DecodedSamples;
 
     class Decoder {
     public:
         typedef std::span<std::byte> Data;
+
+    protected:
+        typedef std::array<std::array<int32_t, 32>, 2> ChannelValues;
+        typedef std::array<std::array<std::array<int32_t, 3>, 32>, 2> ScaleFactors;
 
     private:
         Data _data;
@@ -60,6 +54,10 @@ namespace mpeg1_aud {
         size_t next_frame(DecodedSamples& samples);
 
     protected:
+        ChannelValues read_allocations(util::bitspan& data, uint32_t bound, uint32_t sblimit);
+        ChannelValues read_scfsi(util::bitspan& data, ChannelValues& allocations, uint32_t bound, uint32_t sblimit);
+        ScaleFactors read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi, uint32_t sblimit, uint32_t channels);
+
         DecodedSamples decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& sf, uint32_t bound, uint32_t sblimit);
         std::array<int32_t, 3> read_samples(util::bitspan& data, int32_t level, int32_t scale_factor);
     };

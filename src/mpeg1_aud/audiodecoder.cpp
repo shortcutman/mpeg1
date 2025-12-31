@@ -195,7 +195,37 @@ mpeg1_aud::FrameHeader mpeg1_aud::read_frame_header(std::span<std::byte>& data) 
     return header;
 }
 
-mpeg1_aud::ChannelValues mpeg1_aud::read_allocations(util::bitspan& data, uint32_t bound, uint32_t sblimit) {
+void mpeg1_aud::Decoder::set_data(Data data) {
+    _data = data;
+}
+
+size_t mpeg1_aud::Decoder::next_frame(mpeg1_aud::DecodedSamples& samples) {
+    mpeg1_aud::align_to_sync(_data);
+    auto header = mpeg1_aud::read_frame_header(_data);
+
+    uint32_t bound = 27, sblimit = 27, channels = 2;
+    if (header.mode == 0b11) {
+        channels = 1;
+        bound = header.mode_ext * 4 + 4;
+    }
+
+    util::bitspan bits(_data);
+    auto allocations = read_allocations(bits, bound, sblimit);
+    auto scfsi = read_scfsi(bits, allocations, sblimit, channels);
+    auto scale_factors = read_scale_factors(bits, allocations, scfsi, sblimit, channels);
+    samples = decode_samples(bits, allocations, scale_factors, bound, sblimit);
+
+    size_t frame_size = (144 * 128000) / 44100;
+    if (header.padding_bit) {
+        frame_size++;
+    }
+
+    _data = _data.subspan(frame_size - 4); // -4 is for frame header which is a consuming function
+
+    return frame_size;
+}
+
+mpeg1_aud::Decoder::ChannelValues mpeg1_aud::Decoder::read_allocations(util::bitspan& data, uint32_t bound, uint32_t sblimit) {
     assert(bound <= sblimit);
 
     ChannelValues allocation{};
@@ -216,7 +246,7 @@ mpeg1_aud::ChannelValues mpeg1_aud::read_allocations(util::bitspan& data, uint32
     return allocation;
 }
 
-mpeg1_aud::ChannelValues mpeg1_aud::read_scfsi(util::bitspan& data, ChannelValues& allocations, uint32_t sblimit, uint32_t channels) {
+mpeg1_aud::Decoder::ChannelValues mpeg1_aud::Decoder::read_scfsi(util::bitspan& data, ChannelValues& allocations, uint32_t sblimit, uint32_t channels) {
     ChannelValues scfsi{};
     for (size_t sb = 0; sb < sblimit; sb++) {
         for (size_t ch = 0; ch < channels; ch++) {
@@ -233,7 +263,7 @@ mpeg1_aud::ChannelValues mpeg1_aud::read_scfsi(util::bitspan& data, ChannelValue
     return scfsi;
 }
 
-mpeg1_aud::ScaleFactors mpeg1_aud::read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi, uint32_t sblimit, uint32_t channels) {
+mpeg1_aud::Decoder::ScaleFactors mpeg1_aud::Decoder::read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi, uint32_t sblimit, uint32_t channels) {
     ScaleFactors scalefactors{};
     
     for (size_t sb = 0; sb < sblimit; sb++) {
@@ -267,36 +297,6 @@ mpeg1_aud::ScaleFactors mpeg1_aud::read_scale_factors(util::bitspan& data, Chann
     }
 
     return scalefactors;
-}
-
-void mpeg1_aud::Decoder::set_data(Data data) {
-    _data = data;
-}
-
-size_t mpeg1_aud::Decoder::next_frame(mpeg1_aud::DecodedSamples& samples) {
-    mpeg1_aud::align_to_sync(_data);
-    auto header = mpeg1_aud::read_frame_header(_data);
-
-    uint32_t bound = 27, sblimit = 27, channels = 2;
-    if (header.mode == 0b11) {
-        channels = 1;
-        bound = header.mode_ext * 4 + 4;
-    }
-
-    util::bitspan bits(_data);
-    auto allocations = mpeg1_aud::read_allocations(bits, bound, sblimit);
-    auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, sblimit, channels);
-    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi, sblimit, channels);
-    samples = decode_samples(bits, allocations, scale_factors, bound, sblimit);
-
-    size_t frame_size = (144 * 128000) / 44100;
-    if (header.padding_bit) {
-        frame_size++;
-    }
-
-    _data = _data.subspan(frame_size - 4); // -4 is for frame header which is a consuming function
-
-    return frame_size;
 }
 
 mpeg1_aud::DecodedSamples mpeg1_aud::Decoder::decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& scale_factors, uint32_t bound, uint32_t sblimit) {
