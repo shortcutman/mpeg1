@@ -402,3 +402,33 @@ mpeg1_aud::DecodedSamples mpeg1_aud::get_next_frame(std::span<std::byte>& data) 
 
     return decoded;
 }
+
+void mpeg1_aud::Decoder::set_data(Data data) {
+    _data = data;
+}
+
+std::expected<mpeg1_aud::DecodedSamples, std::runtime_error> mpeg1_aud::Decoder::next_frame() {
+    mpeg1_aud::align_to_sync(_data);
+    auto header = mpeg1_aud::read_frame_header(_data);
+
+    uint32_t bound = 27, sblimit = 27, channels = 2;
+    if (header.mode == 0b11) {
+        channels = 1;
+        bound = header.mode_ext * 4 + 4;
+    }
+
+    util::bitspan bits(_data);
+    auto allocations = mpeg1_aud::read_allocations(bits, bound, sblimit);
+    auto scfsi = mpeg1_aud::read_scfsi(bits, allocations, sblimit, channels);
+    auto scale_factors = mpeg1_aud::read_scale_factors(bits, allocations, scfsi, sblimit, channels);
+    auto decoded = mpeg1_aud::decode_samples(bits, allocations, scale_factors, bound, sblimit);
+
+    size_t frame_size = (144 * 128000) / 44100;
+    if (header.padding_bit) {
+        frame_size++;
+    }
+
+    _data = _data.subspan(frame_size - 4); // -4 is for frame header which is a consuming function
+
+    return decoded;
+}

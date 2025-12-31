@@ -7,6 +7,7 @@
 
 #include "bitspan.hpp"
 
+#include <expected>
 #include <span>
 
 namespace mpeg1_aud {
@@ -28,7 +29,6 @@ namespace mpeg1_aud {
     };
 
     void align_to_sync(std::span<std::byte>& data);
-
     FrameHeader read_frame_header(std::span<std::byte>& data);
     
     typedef std::array<std::array<int32_t, 32>, 2> ChannelValues;
@@ -46,4 +46,19 @@ namespace mpeg1_aud {
     DecodedSamples decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& sf, uint32_t bound, uint32_t sblimit);
 
     DecodedSamples get_next_frame(std::span<std::byte>& data);
+
+    class Decoder {
+    public:
+        typedef std::span<std::byte> Data;
+
+    private:
+        Data _data;
+
+    public:
+        Decoder() {}
+        ~Decoder() {}
+
+        void set_data(Data data);
+        std::expected<DecodedSamples, std::runtime_error> next_frame();
+    };
 }

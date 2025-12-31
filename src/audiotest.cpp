@@ -91,6 +91,9 @@ int main(int argc, char** argv) {
 
     // kjmp2_context_t kctx;
     // kjmp2_init(&kctx);
+
+    mpeg1_aud::Decoder audio_decoder;
+    audio_decoder.set_data(span);
     
     while (running) {
         // mpeg1_aud::align_to_sync(span);
@@ -105,7 +108,7 @@ int main(int argc, char** argv) {
 
         auto queued_bytes = SDL_GetAudioStreamQueued(stream);
         if (queued_bytes < (spec.freq * sizeof(short))) {
-            auto d = mpeg1_aud::get_next_frame(span);
+            auto d = audio_decoder.next_frame().value();
             if (!SDL_PutAudioStreamData(stream, d.data(), d.size() * 2)) {
                 SDL_Log("Failed to push data: %s", SDL_GetError());
                 running = 0;
