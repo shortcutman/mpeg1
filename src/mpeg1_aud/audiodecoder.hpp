@@ -39,7 +39,7 @@ namespace mpeg1_aud {
     typedef std::array<std::array<std::array<int32_t, 3>, 32>, 2> ScaleFactors;
     ScaleFactors read_scale_factors(util::bitspan& data, ChannelValues& allocations, ChannelValues& scfsi, uint32_t sblimit, uint32_t channels);
 
-    std::array<int32_t, 3> read_samples(util::bitspan& data, int32_t level, int32_t scale_factor);
+    
 
     typedef std::array<short, 1152 * 2> DecodedSamples;
 
@@ -61,5 +61,6 @@ namespace mpeg1_aud {
 
     protected:
         DecodedSamples decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& sf, uint32_t bound, uint32_t sblimit);
+        std::array<int32_t, 3> read_samples(util::bitspan& data, int32_t level, int32_t scale_factor);
     };
 }

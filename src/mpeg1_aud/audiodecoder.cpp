@@ -269,46 +269,6 @@ mpeg1_aud::ScaleFactors mpeg1_aud::read_scale_factors(util::bitspan& data, Chann
     return scalefactors;
 }
 
-std::array<int32_t, 3> mpeg1_aud::read_samples(util::bitspan& data, int32_t level, int32_t scale_factor) {
-    if (level == 0) {
-        return std::array<int, 3>{};
-    }
-
-    if (scale_factor == 63) {
-        scale_factor = 0;
-    } else {
-        auto sf_by_3 = scale_factor / 3;
-        scale_factor = ((SCF_BASE[scale_factor % 3] + (((1 << sf_by_3) >> 1))) >> sf_by_3);
-    }
-
-    std::array<int, 3> samples;
-
-    auto quant_class = QuantClasses.at(level);
-    if (quant_class.grouping) {
-        auto val = data.read_bits_be(quant_class.bits_per_codeword);
-        samples[0] = val % level;
-        val /= level;
-        samples[1] = val % level;
-        samples[2] = val / level;
-    } else {
-        samples[0] = data.read_bits_be(quant_class.bits_per_codeword);
-        samples[1] = data.read_bits_be(quant_class.bits_per_codeword);
-        samples[2] = data.read_bits_be(quant_class.bits_per_codeword);
-    }
-
-    int scale = 65536 / (level + 1);
-    level = ((level + 1) >> 1) - 1;
-
-    for (size_t i = 0; i < 3; i++) {
-        int val = (level - samples[i]) * scale;
-        samples[i] = (val * (scale_factor >> 12) +
-                     ((val * (scale_factor & 4095) + 2048) >> 12))
-                     >> 12;
-    }
-
-    return samples;
-}
-
 void mpeg1_aud::Decoder::set_data(Data data) {
     _data = data;
 }
@@ -402,4 +362,44 @@ mpeg1_aud::DecodedSamples mpeg1_aud::Decoder::decode_samples(util::bitspan& data
     }
 
     return decoded;
+}
+
+std::array<int32_t, 3> mpeg1_aud::Decoder::read_samples(util::bitspan& data, int32_t level, int32_t scale_factor) {
+    if (level == 0) {
+        return std::array<int, 3>{};
+    }
+
+    if (scale_factor == 63) {
+        scale_factor = 0;
+    } else {
+        auto sf_by_3 = scale_factor / 3;
+        scale_factor = ((SCF_BASE[scale_factor % 3] + (((1 << sf_by_3) >> 1))) >> sf_by_3);
+    }
+
+    std::array<int, 3> samples;
+
+    auto quant_class = QuantClasses.at(level);
+    if (quant_class.grouping) {
+        auto val = data.read_bits_be(quant_class.bits_per_codeword);
+        samples[0] = val % level;
+        val /= level;
+        samples[1] = val % level;
+        samples[2] = val / level;
+    } else {
+        samples[0] = data.read_bits_be(quant_class.bits_per_codeword);
+        samples[1] = data.read_bits_be(quant_class.bits_per_codeword);
+        samples[2] = data.read_bits_be(quant_class.bits_per_codeword);
+    }
+
+    int scale = 65536 / (level + 1);
+    level = ((level + 1) >> 1) - 1;
+
+    for (size_t i = 0; i < 3; i++) {
+        int val = (level - samples[i]) * scale;
+        samples[i] = (val * (scale_factor >> 12) +
+                     ((val * (scale_factor & 4095) + 2048) >> 12))
+                     >> 12;
+    }
+
+    return samples;
 }
