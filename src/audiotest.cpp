@@ -94,6 +94,7 @@ int main(int argc, char** argv) {
 
     mpeg1_aud::Decoder audio_decoder;
     audio_decoder.set_data(span);
+    mpeg1_aud::DecodedSamples samples;
     
     while (running) {
         // mpeg1_aud::align_to_sync(span);
@@ -108,8 +109,8 @@ int main(int argc, char** argv) {
 
         auto queued_bytes = SDL_GetAudioStreamQueued(stream);
         if (queued_bytes < (spec.freq * sizeof(short))) {
-            auto d = audio_decoder.next_frame().value();
-            if (!SDL_PutAudioStreamData(stream, d.data(), d.size() * 2)) {
+            if (audio_decoder.next_frame(samples) != 0 &&
+                !SDL_PutAudioStreamData(stream, samples.data(), samples.size() * 2)) {
                 SDL_Log("Failed to push data: %s", SDL_GetError());
                 running = 0;
             }

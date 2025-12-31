@@ -45,8 +45,6 @@ namespace mpeg1_aud {
 
     DecodedSamples decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& sf, uint32_t bound, uint32_t sblimit);
 
-    DecodedSamples get_next_frame(std::span<std::byte>& data);
-
     class Decoder {
     public:
         typedef std::span<std::byte> Data;
@@ -59,6 +57,6 @@ namespace mpeg1_aud {
         ~Decoder() {}
 
         void set_data(Data data);
-        std::expected<DecodedSamples, std::runtime_error> next_frame();
+        size_t next_frame(DecodedSamples& samples);
     };
 }

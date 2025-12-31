@@ -38,6 +38,10 @@ TEST(AudioDecoderIntegration, compare_to_kjmp2) {
     mpeg1_aud::align_to_sync(span);
     // auto total = 0;
 
+    mpeg1_aud::Decoder decoder;
+    decoder.set_data(span);
+    mpeg1_aud::DecodedSamples samples;
+
     for (size_t f = 0; f < 5000; f++) {
         std::array<signed short, 1152*2> frame{};
 
@@ -47,15 +51,14 @@ TEST(AudioDecoderIntegration, compare_to_kjmp2) {
         auto bytes_read = kjmp2_decode_frame(&kctx, reinterpret_cast<unsigned char*>(span.data()), frame.data());
         // total += bytes_read;
         // std::println("Bytes read: {}, total: {}", bytes_read, total);
-        
-        auto read_span = span;
-        auto samples = mpeg1_aud::get_next_frame(read_span);
 
-        ASSERT_EQ(bytes_read, span.size() - read_span.size()) << "Frame: " << f;
+        auto frame_size = decoder.next_frame(samples);
+
+        ASSERT_EQ(bytes_read, frame_size) << "Frame: " << f;
         for (size_t i = 0; i < (1152 * 2); i++) {
             ASSERT_EQ(frame[i], samples[i]) << "Pos: " << i;
         }
 
-        span = read_span;
+        span = span.subspan(bytes_read);
     }
 }

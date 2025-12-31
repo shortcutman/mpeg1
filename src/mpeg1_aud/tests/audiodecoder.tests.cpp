@@ -149,17 +149,14 @@ TEST(AudioDecoder, read_scale_factors) {
 
 TEST(AudioDecoder, DISABLED_parse_whole_file) {
     auto audio = read_file("../src/mpeg1_aud/tests/data/audio.mp2");
-    auto span = std::span(audio);
-    mpeg1_aud::align_to_sync(span);
+    mpeg1_aud::Decoder decoder;
+    decoder.set_data(audio);
+    mpeg1_aud::DecodedSamples samples;
 
     try {
-        while (!span.empty()) {
-            mpeg1_aud::align_to_sync(span);
+        while (decoder.next_frame(samples)) {
             // std::println("File offset: {}", (audio.size() - span.size()));
-            
-            auto read_span = span;
-            mpeg1_aud::get_next_frame(read_span);
-            span = read_span;
+            ;
         }
     } catch (std::exception& e) {
         if (std::string("Not enough bits available.") != e.what()) {
