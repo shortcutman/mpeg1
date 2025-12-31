@@ -14,6 +14,14 @@
 #include <vector>
 
 namespace {
+
+    enum Mode {
+        Stereo = 0,
+        Joint_Stereo = 1,
+        Dual_Channel = 2,
+        Single_Channel = 3
+    };
+
     const std::array<int32_t, 32> Bits_For_Subband_B2a = {
         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
         3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -203,10 +211,32 @@ size_t mpeg1_aud::Decoder::next_frame(mpeg1_aud::DecodedSamples& samples) {
     mpeg1_aud::align_to_sync(_data);
     auto header = mpeg1_aud::read_frame_header(_data);
 
-    uint32_t bound = 27, sblimit = 27, channels = 2;
-    if (header.mode == 0b11) {
+    uint32_t channels = 0;
+    if (header.mode == Mode::Single_Channel) {
         channels = 1;
+        
+    } else {
+        channels = 2;
+    }
+
+    auto bitrate = BitrateTable[header.bitrate_index];
+    auto frequency = FrequencyTable[header.sampling_frequency];
+    auto sblimit = 0;
+
+    auto bitrate_per_ch = bitrate / channels;
+    if (bitrate_per_ch >= 56000 && (bitrate_per_ch <= 80000 || frequency == 48000)) {
+        sblimit = 27;
+    } else if (bitrate_per_ch <= 48000) {
+        sblimit = frequency == 32000 ? 12 : 8;
+    } else {
+        sblimit = 30;
+    }
+
+    auto bound = 0;
+    if (header.mode == Mode::Joint_Stereo) {
         bound = header.mode_ext * 4 + 4;
+    } else {
+        bound = sblimit;
     }
 
     util::bitspan bits(_data);
@@ -215,7 +245,7 @@ size_t mpeg1_aud::Decoder::next_frame(mpeg1_aud::DecodedSamples& samples) {
     auto scale_factors = read_scale_factors(bits, allocations, scfsi, sblimit, channels);
     samples = decode_samples(bits, allocations, scale_factors, bound, sblimit);
 
-    size_t frame_size = (144 * 128000) / 44100;
+    size_t frame_size = (144 * bitrate) / frequency;
     if (header.padding_bit) {
         frame_size++;
     }

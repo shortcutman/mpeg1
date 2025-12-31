@@ -36,6 +36,13 @@ namespace mpeg1_aud {
     class Decoder {
     public:
         typedef std::span<std::byte> Data;
+        const std::array<uint32_t, 15> BitrateTable = {
+            0, 32000, 48000, 56000, 64000, 80000, 96000, 112000, 128000, 160000,
+            192000, 224000, 256000, 320000, 384000
+        };
+        const std::array<uint32_t, 3> FrequencyTable = {
+            44100, 48000, 32000
+        };
 
     protected:
         typedef std::array<std::array<int32_t, 32>, 2> ChannelValues;
