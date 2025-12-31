@@ -43,14 +43,14 @@ namespace mpeg1_aud {
 
     typedef std::array<short, 1152 * 2> DecodedSamples;
 
-    DecodedSamples decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& sf, uint32_t bound, uint32_t sblimit);
-
     class Decoder {
     public:
         typedef std::span<std::byte> Data;
 
     private:
         Data _data;
+        std::array<std::array<int, 1024>, 2> _V{};
+        uint32_t _Voffs = 0;
 
     public:
         Decoder() {}
@@ -58,5 +58,8 @@ namespace mpeg1_aud {
 
         void set_data(Data data);
         size_t next_frame(DecodedSamples& samples);
+
+    protected:
+        DecodedSamples decode_samples(util::bitspan& data, ChannelValues& allocations, ScaleFactors& sf, uint32_t bound, uint32_t sblimit);
     };
 }
