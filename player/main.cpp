@@ -24,7 +24,7 @@
 #include <string>
 
 int main(int argc, char** argv) {
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
         std::println("Could not initialise SDL: {}", SDL_GetError());
         return 1;
     }
@@ -145,6 +145,7 @@ int main(int argc, char** argv) {
     }
 
     // 5. Cleanup
+    player.stop();
     ImGui_ImplMetal_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();

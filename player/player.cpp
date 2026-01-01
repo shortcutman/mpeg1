@@ -7,8 +7,6 @@
 
 #include "mpegts.hpp"
 
-#include <SDL3/SDL_timer.h>
-
 #include <fstream>
 
 namespace {
@@ -60,12 +58,23 @@ bool player::Player::open(std::string filepath) {
 
     auto data_span = std::span{data};
 
-    pg1::loop_ts_data(data_span, _data, _audio_data);
-    _decoder.set_data(_data);
-    auto first_frame = _decoder.next_frame();
+    pg1::loop_ts_data(data_span, _video_data, _audio_data);
+    _video_decoder.set_data(_video_data);
+    _audio_decoder.set_data(_audio_data);
+    auto first_frame = _video_decoder.next_frame();
     if (first_frame.has_value()) {
         frame_to_texture(first_frame.value(), _texture.get());
     } else {
+        return false;
+    }
+
+    _audio_spec.format = SDL_AUDIO_S16LE;
+    _audio_spec.channels = 2;
+    _audio_spec.freq = 44100;
+    
+    _audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &_audio_spec, NULL, NULL);
+    if (!_audio_stream) {
+        std::println("Failed to create audio stream: {}", SDL_GetError());
         return false;
     }
 
@@ -77,11 +86,10 @@ bool player::Player::isPlaying() {
 }
 
 void player::Player::play() {
+    SDL_ResumeAudioStreamDevice(_audio_stream);
     _timer = SDL_AddTimer(0,
         static_cast<uint32_t(*)(void*, SDL_TimerID, uint32_t)>([](void* ctx, SDL_TimerID timerID, uint32_t interval) -> uint32_t {
-            auto player = reinterpret_cast<Player*>(ctx);
-            player->step_frame_forward();
-            return 1000.0 / player->_decoder.frame_rate();
+            return reinterpret_cast<Player*>(ctx)->play_advance();
         }), this);
 }
 
@@ -90,11 +98,29 @@ void player::Player::stop() {
         SDL_RemoveTimer(*_timer);
         _timer.reset();
     }
+
+    SDL_PauseAudioStreamDevice(_audio_stream);
+}
+
+uint32_t player::Player::play_advance() {
+    step_frame_forward();
+    buffer_audio();
+    return 1000.0 / _video_decoder.frame_rate();
 }
 
 void player::Player::step_frame_forward() {
-    auto frame = _decoder.next_frame();
+    auto frame = _video_decoder.next_frame();
     if (frame.has_value()) {
         frame_to_texture(frame.value(), _texture.get());
+    }
+}
+
+void player::Player::buffer_audio() {
+    mpeg1_aud::DecodedSamples samples;
+    while (SDL_GetAudioStreamQueued(_audio_stream) < (_audio_spec.freq * sizeof(short))) {
+        if (_audio_decoder.next_frame(samples) != 0 &&
+            !SDL_PutAudioStreamData(_audio_stream, samples.data(), samples.size() * 2)) {
+            std::println("Failed to put audio data: {}", SDL_GetError());
+        }
     }
 }
