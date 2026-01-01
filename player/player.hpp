@@ -20,7 +20,9 @@
 namespace player {
     class Player {
     private:
-        NS::SharedPtr<MTL::Texture> _texture;
+        NS::SharedPtr<MTL::Device> _metal_device;
+        NS::SharedPtr<MTL::Texture> _texture_current;
+        
         std::vector<std::byte> _video_data;
         std::vector<std::byte> _audio_data;
         mpeg1::Decoder _video_decoder;
@@ -31,10 +33,12 @@ namespace player {
         SDL_AudioStream* _audio_stream;
 
     public:
-        Player(NS::SharedPtr<MTL::Texture> texture);
+        Player(NS::SharedPtr<MTL::Device> device);
         ~Player();
 
         bool open(std::string filepath);
+
+        MTL::Texture* texture() const;
 
         bool isPlaying();
         void play();

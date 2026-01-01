@@ -39,8 +39,8 @@ void frame_to_texture(const image::Frame& frame, MTL::Texture* texture) {
 
 }
 
-player::Player::Player(NS::SharedPtr<MTL::Texture> texture)
-: _texture(texture)
+player::Player::Player(NS::SharedPtr<MTL::Device> device)
+: _metal_device(device)
 {
 }
 
@@ -63,7 +63,14 @@ bool player::Player::open(std::string filepath) {
     _audio_decoder.set_data(_audio_data);
     auto first_frame = _video_decoder.next_frame();
     if (first_frame.has_value()) {
-        frame_to_texture(first_frame.value(), _texture.get());
+        auto& frame = first_frame.value();
+        auto textureDescriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
+        textureDescriptor->setPixelFormat(MTL::PixelFormatRGBA32Float);
+        textureDescriptor->setWidth(frame.encoded_width);
+        textureDescriptor->setHeight(frame.encoded_height);
+        _texture_current = NS::TransferPtr(_metal_device->newTexture(textureDescriptor.get()));
+
+        frame_to_texture(first_frame.value(), _texture_current.get());
     } else {
         return false;
     }
@@ -79,6 +86,10 @@ bool player::Player::open(std::string filepath) {
     }
 
     return true;
+}
+
+MTL::Texture* player::Player::texture() const {
+    return _texture_current.get();
 }
 
 bool player::Player::isPlaying() {
@@ -103,15 +114,24 @@ void player::Player::stop() {
 }
 
 uint32_t player::Player::play_advance() {
+    auto start = SDL_GetTicks();
+
     step_frame_forward();
     buffer_audio();
-    return 1000.0 / _video_decoder.frame_rate();
+
+    auto end = SDL_GetTicks();
+    auto frame_time = 1000.0 / _video_decoder.frame_rate();
+    int64_t decode_time = end - start;
+    auto advance = std::max(static_cast<int64_t>(frame_time) - decode_time, 1LL);
+    std::println("Expected: {} Decode: {}", frame_time, decode_time);
+
+    return advance;
 }
 
 void player::Player::step_frame_forward() {
     auto frame = _video_decoder.next_frame();
     if (frame.has_value()) {
-        frame_to_texture(frame.value(), _texture.get());
+        frame_to_texture(frame.value(), _texture_current.get());
     }
 }
 

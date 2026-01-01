@@ -58,14 +58,8 @@ int main(int argc, char** argv) {
     ImGui_ImplMetal_Init(layer->device());
     ImGui_ImplSDL3_InitForMetal(window);
 
-    auto textureDescriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
-    textureDescriptor->setPixelFormat(MTL::PixelFormatRGBA32Float);
-    textureDescriptor->setWidth(640);
-    textureDescriptor->setHeight(272);
-    auto texture = NS::TransferPtr(metalDevice->newTexture(textureDescriptor.get()));
-
     std::string input_filepath = argv[1];
-    player::Player player(texture);
+    player::Player player(metalDevice);
     player.open(input_filepath);
     player.play();
 
@@ -110,7 +104,7 @@ int main(int argc, char** argv) {
             auto aspect_ratio = 272.f / 640.f;
             auto space = ImGui::GetContentRegionAvail();
             auto vert = space.x * aspect_ratio;
-            ImGui::Image((ImTextureID)(intptr_t)(texture.get()), ImVec2(space.x, vert));
+            ImGui::Image((ImTextureID)(intptr_t)(player.texture()), ImVec2(space.x, vert));
 
             if (player.isPlaying()) {
                 if (ImGui::Button("Stop")) {
