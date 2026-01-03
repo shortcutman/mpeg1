@@ -116,6 +116,13 @@ int main(int argc, char** argv) {
                 }
             }
 
+            auto decode_frame_rate = player.decode_frame_rate();
+            if (std::isnan(decode_frame_rate)) {
+                ImGui::Text("%s", std::format("Effective Frame Rate: None").c_str());
+            } else {
+                ImGui::Text("%s", std::format("Effective Frame Rate: {}", decode_frame_rate).c_str());
+            }
+
             // if (ImGui::Button("Next Frame")) {
             //     auto frame_res = decoder.next_frame();
             //     if (frame_res.has_value()) {

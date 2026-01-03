@@ -16,12 +16,19 @@
 #include <QuartzCore/QuartzCore.hpp>
 
 #include <optional>
+#include <semaphore>
+#include <thread>
 
 namespace player {
     class Player {
     private:
         NS::SharedPtr<MTL::Device> _metal_device;
         NS::SharedPtr<MTL::Texture> _texture_current;
+        NS::SharedPtr<MTL::Texture> _texture_next;
+        std::binary_semaphore _queue{0};
+        std::thread _video_decode_async;
+        float _decode_frame_rate;
+        bool _decode_video = true;
         
         std::vector<std::byte> _video_data;
         std::vector<std::byte> _audio_data;
@@ -39,6 +46,7 @@ namespace player {
         bool open(std::string filepath);
 
         MTL::Texture* texture() const;
+        float decode_frame_rate();
 
         bool isPlaying();
         void play();
@@ -47,6 +55,8 @@ namespace player {
     private:
         uint32_t play_advance();
         void step_frame_forward();
+
+        void buffer_video();
         void buffer_audio();
     };
 }
