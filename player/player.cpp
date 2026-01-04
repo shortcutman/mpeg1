@@ -46,12 +46,9 @@ player::Player::Player(NS::SharedPtr<MTL::Device> device)
 }
 
 player::Player::~Player() {
-    if (_timer) {
-        SDL_RemoveTimer(*_timer);
-    }
-
     _decode_video = false;
-    _queue.release();
+    _edit_queue.release();
+    _fill_queue.release();
     _video_decode_async.join();
 }
 
@@ -67,22 +64,26 @@ bool player::Player::open(std::string filepath) {
     _video_decoder.set_data(_video_data);
     _audio_decoder.set_data(_audio_data);
     auto first_frame = _video_decoder.next_frame();
-    if (first_frame.has_value()) {
-        auto& frame = first_frame.value();
-        auto textureDescriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
-        textureDescriptor->setPixelFormat(MTL::PixelFormatRGBA32Float);
-        textureDescriptor->setWidth(frame.encoded_width);
-        textureDescriptor->setHeight(frame.encoded_height);
-        _texture_current = NS::TransferPtr(_metal_device->newTexture(textureDescriptor.get()));
-        _texture_next = NS::TransferPtr(_metal_device->newTexture(textureDescriptor.get()));
-
-        frame_to_texture(first_frame.value(), _texture_current.get());
-    } else {
+    if (!first_frame.has_value()) {
         return false;
     }
 
+    auto& frame = first_frame.value();
+    auto textureDescriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
+    textureDescriptor->setPixelFormat(MTL::PixelFormatRGBA32Float);
+    textureDescriptor->setWidth(frame.encoded_width);
+    textureDescriptor->setHeight(frame.encoded_height);
+    _texture_current = NS::TransferPtr(_metal_device->newTexture(textureDescriptor.get()));
+
+    frame_to_texture(first_frame.value(), _texture_current.get());
+    
+    for (size_t i = 0; i < FRAME_BUFFER_COUNT; i++) {
+        _reuse_queue.push_back(NS::TransferPtr(_metal_device->newTexture(textureDescriptor.get())));
+    }
+
+    _fill_queue.release();
+    _edit_queue.release();
     _video_decode_async = std::thread(std::bind(&Player::buffer_video, this));
-    _queue.release();
 
     _audio_spec.format = SDL_AUDIO_S16LE;
     _audio_spec.channels = 2;
@@ -101,70 +102,80 @@ MTL::Texture* player::Player::texture() const {
     return _texture_current.get();
 }
 
+void player::Player::tick() {
+    if (!_play) {
+        return;
+    }
+
+    auto now_ns = SDL_GetTicksNS();
+    auto adv = (now_ns - _start_ns) / static_cast<uint64_t>(1000000000.f / _video_decoder.frame_rate());
+    if (adv > _frames) {
+        if (play_advance()) {
+            _frames = adv;
+
+            auto end_ms = SDL_GetTicks();
+            auto frame_rate = 1000.0f / (end_ms - _last_frame_time_ms);
+            _decode_frame_rate = frame_rate;
+            _last_frame_time_ms = end_ms;
+        }
+    }
+}
+
 float player::Player::decode_frame_rate() {
     return _decode_frame_rate;
 }
 
 bool player::Player::isPlaying() {
-    return _timer.has_value();
+    return _play;
 }
 
 void player::Player::play() {
     SDL_ResumeAudioStreamDevice(_audio_stream);
-    _timer = SDL_AddTimer(1000.0f / _video_decoder.frame_rate(),
-        static_cast<uint32_t(*)(void*, SDL_TimerID, uint32_t)>([](void* ctx, SDL_TimerID timerID, uint32_t interval) -> uint32_t {
-            return reinterpret_cast<Player*>(ctx)->play_advance();
-        }), this);
+    _play = true;
+    _start_ns = SDL_GetTicksNS();
+    _frames = 0;
+    _last_frame_time_ms = SDL_GetTicks();
 }
 
 void player::Player::stop() {
-    if (_timer) {
-        SDL_RemoveTimer(*_timer);
-        _timer.reset();
-    }
-
     SDL_PauseAudioStreamDevice(_audio_stream);
+    _play = false;
 }
 
-uint32_t player::Player::play_advance() {
-    std::swap(_texture_current, _texture_next);
-    _queue.release();
+bool player::Player::play_advance() {
+    _edit_queue.acquire();
+    if (_frame_queue.empty()) {
+        _edit_queue.release();
+        return false;
+    }
+    auto reuse = _texture_current;
+    _texture_current = _frame_queue.front();
+    _frame_queue.pop();
+    _edit_queue.release();
+
+    _reuse_queue.push_back(reuse);
+    _fill_queue.release();
 
     buffer_audio();
-
-    uint32_t frame_time = 1000.0 / _video_decoder.frame_rate();
-
-    return frame_time;
-}
-
-void player::Player::step_frame_forward() {
-    auto frame = _video_decoder.next_frame();
-    if (frame.has_value()) {
-        frame_to_texture(frame.value(), _texture_current.get());
-    }
-}
-
-namespace {
-    const float FRAME_RATE_WINDOW = 5;
-    uint64_t frames = 0;
-    uint64_t start = 0;
+    
+    return true;
 }
 
 void player::Player::buffer_video() {
-    start = SDL_GetTicks();
-
     while (_decode_video) {
-        auto frame = _video_decoder.next_frame();
-        if (frame.has_value()) {
-            _queue.acquire();
-            frame_to_texture(frame.value(), _texture_next.get());
+        _fill_queue.acquire();
+        std::vector<NS::SharedPtr<MTL::Texture>> reuse = std::move(_reuse_queue);
 
-            frames++;
-            if (frames % static_cast<int>(FRAME_RATE_WINDOW) == 0) {
-                auto end = SDL_GetTicks();
-                auto frame_rate = 1000.0f / ((end - start) / FRAME_RATE_WINDOW);
-                _decode_frame_rate = frame_rate;
-                start = end;
+        while (!reuse.empty()) {
+            auto texture = reuse.back();
+            reuse.pop_back();
+
+            auto frame = _video_decoder.next_frame();
+            if (frame.has_value()) {
+                frame_to_texture(frame.value(), texture.get());
+                _edit_queue.acquire();
+                _frame_queue.push(texture);
+                _edit_queue.release();
             }
         }
     }

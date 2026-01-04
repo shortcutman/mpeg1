@@ -74,6 +74,8 @@ int main(int argc, char** argv) {
             }
         }
 
+        player.tick();
+
         int width, height;
         SDL_GetWindowSizeInPixels(window, &width, &height);
 
@@ -120,7 +122,7 @@ int main(int argc, char** argv) {
             if (std::isnan(decode_frame_rate)) {
                 ImGui::Text("%s", std::format("Effective Frame Rate: None").c_str());
             } else {
-                ImGui::Text("%s", std::format("Effective Frame Rate: {}", decode_frame_rate).c_str());
+                ImGui::Text("%s", std::format("Effective Frame Rate: {0:.2f}", decode_frame_rate).c_str());
             }
 
             // if (ImGui::Button("Next Frame")) {
