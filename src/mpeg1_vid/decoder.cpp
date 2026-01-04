@@ -125,7 +125,7 @@ image::Frame mpeg1::Decoder::assemble_frame() {
         c = image::ycbcrToRGB(c);
     }
 
-    imgcopy.description = mpeg1::ct_to_string(_picture.coding_type);
+    // imgcopy.description = mpeg1::ct_to_string(_picture.coding_type);
     
     return imgcopy;
 }
