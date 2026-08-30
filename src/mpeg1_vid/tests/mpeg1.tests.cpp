@@ -224,8 +224,8 @@ TEST(MPEG1, read_block_unhandled) {
 
 TEST(MPEG1, calc_motion_vectors_predictive1) {
     mpeg1::PictureHeader pred_pic{
+        .full_pel_forward_vector = true,
         .forward_f_code = 0,
-        .full_pel_forward_vector = true
     };
 
     mpeg1::Macroblock block{
@@ -240,8 +240,8 @@ TEST(MPEG1, calc_motion_vectors_predictive1) {
 
 TEST(MPEG1, calc_motion_vectors_predictive2) {
     mpeg1::PictureHeader pred_pic{
+        .full_pel_forward_vector = false,
         .forward_f_code = 2,
-        .full_pel_forward_vector = false
     };
 
     mpeg1::Macroblock block{
