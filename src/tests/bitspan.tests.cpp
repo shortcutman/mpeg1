@@ -185,3 +185,36 @@ TEST(BitSpan, round_to_next_byte_fullbyte_reads) {
     EXPECT_EQ(bits.bits_read(), 16);
     EXPECT_EQ(bits.bytes_read(), 2);
 }
+
+TEST(BitSpan, peak_16bits_16bit_buffer_zeroes) {
+    auto data = make_bytes(0x00, 0x00);
+    bitspan bits(data);
+
+    EXPECT_EQ(bits.peak_16bits_be(), 0x00);
+    EXPECT_EQ(bits.read_bits_be(16), 0x00);
+}
+
+TEST(BitSpan, peak_16bits_8bit_buffer_zeroes) {
+    auto data = make_bytes(0x00);
+    bitspan bits(data);
+
+    EXPECT_EQ(bits.peak_16bits_be(), 0x00);
+    EXPECT_THROW(bits.read_bits_be(16), std::runtime_error);
+}
+
+TEST(BitSpan, peak_16bits_no_buffer) {
+    auto data = make_bytes();
+    bitspan bits(data);
+
+    EXPECT_THROW(bits.peak_16bits_be(), std::runtime_error);
+    EXPECT_THROW(bits.read_bits_be(16), std::runtime_error);
+}
+
+TEST(BitSpan, peak_16bits_24bit_buffer_offset_1bit) {
+    auto data = make_bytes(0x00, 0x00, 0xff);
+    bitspan bits(data);
+    bits.read_bits_be(1);
+
+    EXPECT_EQ(bits.peak_16bits_be(), 0x01);
+    EXPECT_EQ(bits.read_bits_be(16), 0x01);
+}

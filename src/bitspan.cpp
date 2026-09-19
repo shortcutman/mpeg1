@@ -85,6 +85,31 @@ uint32_t util::bitspan::peek_bits_be(uint8_t bits) const {
     return val;
 }
 
+uint16_t util::bitspan::peak_16bits_be() const {
+    int64_t bits_remain = static_cast<int64_t>(_data.size() * 8) - _bit_offset - 16;
+    if (bits_remain <= -16) {
+        throw std::runtime_error("Not enough bits available.");
+    }
+
+    size_t byte_offset = _bit_offset / 8;
+    size_t bits_in = _bit_offset % 8;
+
+    size_t val = 0;
+    val |= *reinterpret_cast<uint8_t*>(&_data[byte_offset]) << 16;
+
+    if (byte_offset + 1 < _data.size()) {
+        val |= *reinterpret_cast<uint8_t*>(&_data[byte_offset + 1]) << 8;
+    }
+
+    if (byte_offset + 2 < _data.size()) {
+        val |= *reinterpret_cast<uint8_t*>(&_data[byte_offset + 2]);
+    }
+
+    val >>= (8 - bits_in);
+    val &= 0xffff;
+    return val;
+}
+
 uint32_t util::bitspan::read_bits_le(uint8_t bits) {
     auto ret = peek_bits_le(bits);
     _bit_offset += bits;
