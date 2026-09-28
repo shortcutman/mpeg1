@@ -12,7 +12,7 @@
 namespace mpeg1 {
 
 // Table B.1 Variable length codes for macroblock_address_increment
-const VariableLengthCode<size_t> MACROBLOCK_ADDRESSING = {{
+const VariableLengthCode<size_t, 16> MACROBLOCK_ADDRESSING = {{
     {0b1, 1, 1},
     {0b011, 3, 2},
     {0b010, 3, 3},
@@ -49,13 +49,13 @@ const VariableLengthCode<size_t> MACROBLOCK_ADDRESSING = {{
 }};
 
 // Table 5.2a Variable length codes for macroblock_type in intra-coded pictures.
-const VariableLengthCode<MacroblockType> MACROBLOCK_TYPE_INTRA_VLC = {{
+const VariableLengthCode<MacroblockType, 8> MACROBLOCK_TYPE_INTRA_VLC = {{
     {0b1, 1, {false, false, false, false, true}},
     {0b01, 2, {true, false, false, false, true}}
 }};
 
 // Table 5.2b Variable length codes for macroblock_type in predictive-coded pictures.
-const VariableLengthCode<MacroblockType> MACROBLOCK_TYPE_PRED_VLC = {{
+const VariableLengthCode<MacroblockType, 8> MACROBLOCK_TYPE_PRED_VLC = {{
     {0b1, 1,        {false, true, false, true, false}},
     {0b01, 2,       {false, false, false, true, false}},
     {0b001, 3,      {false, true, false, false, false}},
@@ -66,7 +66,7 @@ const VariableLengthCode<MacroblockType> MACROBLOCK_TYPE_PRED_VLC = {{
 }};
 
 // Table 5.2a Variable length codes for coded_block_pattern.
-const VariableLengthCode<uint32_t> MACROBLOCK_CODED_BLOCK_PATTERN = {{
+const VariableLengthCode<uint32_t, 16> MACROBLOCK_CODED_BLOCK_PATTERN = {{
     {0b111, 3, 60},
 
     {0b1101, 4, 4},
@@ -145,7 +145,7 @@ const VariableLengthCode<uint32_t> MACROBLOCK_CODED_BLOCK_PATTERN = {{
 
 // Table B.4 Variable length codes for motion_horizontal_forward_code,
 // motion_vertical_forward_code,motion_horizontal_backward_code, and motion_vertical_backward_code.
-const VariableLengthCode<int> MACROBLOCK_MOTION_VECTOR_CODES = {{
+const VariableLengthCode<int, 16> MACROBLOCK_MOTION_VECTOR_CODES = {{
     {0b00000011001, 11, -16},
     {0b00000011011, 11, -15},
     {0b00000011101, 11, -14},
@@ -196,7 +196,7 @@ const VariableLengthCode<int> MACROBLOCK_MOTION_VECTOR_CODES = {{
 }};
 
 // Table B5.a Variable length codes for dct_dc_size_luminance
-const VariableLengthCode<size_t> BLOCK_DCT_DC_SIZE_LUMINANCE = {{
+const VariableLengthCode<size_t, 8> BLOCK_DCT_DC_SIZE_LUMINANCE = {{
     {0b100, 3, 0},
     {0b00, 2, 1},
     {0b01, 2, 2},
@@ -209,7 +209,7 @@ const VariableLengthCode<size_t> BLOCK_DCT_DC_SIZE_LUMINANCE = {{
 }};
 
 // Table B5.b Variable length codes for dct_dc_size_chrominance
-const VariableLengthCode<size_t> BLOCK_DCT_DC_SIZE_CHROMINANCE = {{
+const VariableLengthCode<size_t, 8> BLOCK_DCT_DC_SIZE_CHROMINANCE = {{
     {0b00, 2, 0},
     {0b01, 2, 1},
     {0b10, 2, 2},
@@ -228,7 +228,7 @@ struct DCTCoeff {
     auto operator<=>(const DCTCoeff&) const = default;
 };
 
-const VariableLengthCode<DCTCoeff> BLOCK_DCT_COEFF_NEXT = {{
+const VariableLengthCode<DCTCoeff, 16> BLOCK_DCT_COEFF_NEXT = {{
 // Table B.5c Variable length codes for dct_coeff_first and dct_coeff_next
     // {0b1, 1, {0, 1}}, //Only for dct_coeff_first
 
@@ -359,7 +359,7 @@ const VariableLengthCode<DCTCoeff> BLOCK_DCT_COEFF_NEXT = {{
     {0b0000000000011011, 16, {31, 1}},
 }};
 
-const VariableLengthCode<DCTCoeff> BLOCK_DCT_COEFF_FIRST = {{
+const VariableLengthCode<DCTCoeff, 16> BLOCK_DCT_COEFF_FIRST = {{
 // Table B.5c Variable length codes for dct_coeff_first and dct_coeff_next
     {0b1, 1, {0, 1}}, //Only for dct_coeff_first
 
