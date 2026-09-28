@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 
 #include <cstdint>
+#include <chrono>
 #include <fstream>
 #include <span>
 #include <string>
@@ -59,6 +60,7 @@ int main(int argc, char** argv) {
     mpeg1::Decoder decoder;
     decoder.set_data(video_es);
 
+    auto start = std::chrono::steady_clock::now();
     size_t frame_number = 0;
     for (auto frame = decoder.next_frame(); frame.has_value(); frame = decoder.next_frame()) {
         frame_number++;
@@ -69,4 +71,9 @@ int main(int argc, char** argv) {
             frame->encoded_height,
             frame->image);
     }
+
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+
+    std::println("Function took {} ms", duration.count());
 }
