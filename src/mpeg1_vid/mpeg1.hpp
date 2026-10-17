@@ -74,7 +74,7 @@ namespace mpeg1 {
     typedef std::array<int, 64> Block;
 
     struct Macroblock {
-        uint8_t address_increment = 0;
+        uint64_t address_increment = 0;
         MacroblockType type;
 
         uint8_t quantizer_scale = 0;
