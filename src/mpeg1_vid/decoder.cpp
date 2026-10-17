@@ -17,7 +17,7 @@ void mpeg1::Decoder::set_data(Data data) {
     _data = data;
 }
 
-std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame() {
+std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame(bool decode) {
     if (_data.empty()) {
         return std::unexpected(std::runtime_error("No bytes to parse."));
     }
@@ -58,11 +58,18 @@ std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame() {
             if (!returned_current_frame) {
                 returned_current_frame = true;
                 return assemble_frame();
+            } else if (!decode) {
+                returned_current_frame = false;
             }
 
             _picture = mpeg1::read_picture_header(_data);
         } else if (code >= mpeg1::start_code::slice_minimum &&
                    code <= mpeg1::start_code::slice_maximum) {
+            if (!decode) {
+                _data = _data.subspan(4);
+                continue;
+            }
+
             mpeg1::SliceDecoder slicedecoder(_sequence, _picture);
 
             auto last_mb_addr = slicedecoder.decode(_data, _last_frame, _current_frame);

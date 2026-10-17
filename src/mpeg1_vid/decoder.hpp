@@ -35,7 +35,7 @@ namespace mpeg1 {
 
         void set_data(Data data);
 
-        std::expected<image::Frame, std::runtime_error> next_frame();
+        std::expected<image::Frame, std::runtime_error> next_frame(bool decode = true);
 
         float frame_rate() const;
 

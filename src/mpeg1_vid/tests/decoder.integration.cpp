@@ -92,6 +92,40 @@ TEST(DecoderIntegration, eye_I_frame_P_frame) {
         }));
 }
 
+TEST(DecoderIntegration, eye_skip_I_frame_P_frame) {
+    auto input = read_file("../src/mpeg1_vid/tests/data/eye_I_frame_P_frame.es");
+    ASSERT_FALSE(input.empty());
+
+    mpeg1::Decoder d;
+    d.set_data(input);
+
+    auto frame_one = d.next_frame(false);
+    ASSERT_TRUE(frame_one.has_value()) << frame_one.error().what();
+    ASSERT_EQ(frame_one->encoded_width, 640);
+    ASSERT_EQ(frame_one->encoded_height, 272);
+
+    for (auto c : frame_one->image) {
+        const auto check = image::Colour{.r = 0, .g = 135, .b =0};
+        ASSERT_EQ(c, check);
+    }
+
+    std::stringstream ss;
+
+    auto frame_two = d.next_frame();
+    ASSERT_EQ(frame_two->encoded_width, 640);
+    ASSERT_EQ(frame_two->encoded_height, 272);
+
+    uint64_t count = 0;
+    for (auto c : frame_two->image) {
+        const auto check = image::Colour{.r = 0, .g = 135, .b =0};
+        if (c == check) {
+            count++;
+        }
+    }
+
+    ASSERT_EQ(count, 108252);
+}
+
 TEST(DecoderIntegration, frame_end_macroblock_skip_next_pic_header) {
     auto input = read_file("../src/mpeg1_vid/tests/data/frame_end_macroblock_skip.es");
     ASSERT_FALSE(input.empty());
