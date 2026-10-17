@@ -45,10 +45,16 @@ std::vector<std::byte> read_file(const std::string& filename) {
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::println("Args are wrong");
+        std::println("{}: [filename] [dump frames = true/false]", argv[0]);
     }
 
     std::string input_filepath = argv[1];
+
+    bool dumpFrames = false;
+    if (argc == 3) {
+        dumpFrames = strcmp(argv[2], "true") ? true : false;
+    }
+
     std::vector<std::byte> data = read_file(input_filepath);
     auto data_span = std::span{data};
 
@@ -65,11 +71,14 @@ int main(int argc, char** argv) {
     for (auto frame = decoder.next_frame(); frame.has_value(); frame = decoder.next_frame()) {
         frame_number++;
         std::println("Frame: {} {}", frame_number, frame->description);
-        image::writeOutPPM(
-            std::format("/tmp/danpg1/frame_{:04d}_{}.ppm", frame_number, frame->description),
-            frame->encoded_width,
-            frame->encoded_height,
-            frame->image);
+
+        if (dumpFrames) {
+            image::writeOutPPM(
+                std::format("/tmp/danpg1/frame_{:04d}_{}.ppm", frame_number, frame->description),
+                frame->encoded_width,
+                frame->encoded_height,
+                frame->image);
+        }
     }
 
     auto end = std::chrono::steady_clock::now();
