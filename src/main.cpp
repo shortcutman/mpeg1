@@ -84,5 +84,7 @@ int main(int argc, char** argv) {
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double, std::milli> duration = end - start;
 
-    std::println("Function took {} ms", duration.count());
+    std::println("Total of {} frames.", frame_number);
+    std::println("Decode took {} ms.", duration.count());
+    std::println("Average of {} ms per frame.", duration.count() / frame_number);
 }
