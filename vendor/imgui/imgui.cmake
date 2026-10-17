@@ -2,7 +2,7 @@
 include(FetchContent)
 FetchContent_Declare(
     imgui
-    URL https://github.com/ocornut/imgui/archive/refs/tags/v1.92.5.zip
+    URL https://github.com/ocornut/imgui/archive/refs/tags/v1.93.0.zip
 )
 FetchContent_MakeAvailable(imgui)
 
@@ -33,7 +33,8 @@ target_link_libraries(
 set_source_files_properties(
     "${imgui_SOURCE_DIR}/backends/imgui_impl_metal.mm"
     PROPERTIES
-    COMPILE_OPTIONS "-ObjC++;-fobjc-weak;-fobjc-arc"
+    COMPILE_OPTIONS "-ObjC++;-fobjc-weak;"
 )
 
+set_target_properties(imgui PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
 target_compile_definitions(imgui PRIVATE IMGUI_IMPL_METAL_CPP)
