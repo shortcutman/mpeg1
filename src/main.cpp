@@ -15,6 +15,8 @@
 #include "mpegts.hpp"
 #include "mpeg1_vid/decoder.hpp"
 
+#include <CLI/CLI.hpp>
+
 namespace {
 
 std::vector<std::byte> read_file(const std::string& filename) {
@@ -29,30 +31,36 @@ std::vector<std::byte> read_file(const std::string& filename) {
     return buffer;
 }
 
-// void dump_file(const std::vector<std::byte>& data, const std::string& filename) {
-//     std::ofstream file;
-//     file.open(filename, file.binary | file.out);
+void dump_file(const std::vector<std::byte>& data, const std::string& filename) {
+    std::ofstream file;
+    file.open(filename, file.binary | file.out);
 
-//     if (!file.is_open()) {
-//         throw std::runtime_error("Couldn't open for writing.");
-//     }
+    if (!file.is_open()) {
+        throw std::runtime_error("Couldn't open for writing.");
+    }
 
-//     file.write(reinterpret_cast<const char*>(data.data()), data.size());
-//     file.close();
-// }
+    file.write(reinterpret_cast<const char*>(data.data()), data.size());
+    file.close();
+}
 
 }
 
 int main(int argc, char** argv) {
-    if (argc < 2) {
-        std::println("{}: [filename] [dump frames = true/false]", argv[0]);
-    }
+    std::string input_filepath;
+    bool dumpFrames = false, dumpVideo = false;
+    bool printFrameCount = false;
+    uint64_t startFrame = 0;
 
-    std::string input_filepath = argv[1];
-
-    bool dumpFrames = false;
-    if (argc == 3) {
-        dumpFrames = strcmp(argv[2], "true") ? true : false;
+    CLI::App app{"danpg1 MPEG1-Video inside MPEG2-TS decoder"};
+    app.add_option("file", input_filepath, "Input video file.")->required();
+    app.add_option("--start-frame", startFrame, "Start decoding from input video frame number.");
+    app.add_flag("-F,--frame-count", printFrameCount, "Print incrementing frame count during decode.");
+    app.add_flag("-D,--dump-frames", dumpFrames, "Dump decoded frames as PPM image files.");
+    app.add_flag("--dump-video", dumpVideo, "Dump video elementary stream.");
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError& e) {
+        return app.exit(e);
     }
 
     std::vector<std::byte> data = read_file(input_filepath);
@@ -61,16 +69,20 @@ int main(int argc, char** argv) {
     std::vector<std::byte> video_es, audio_es;
     pg1::loop_ts_data(data_span, video_es, audio_es);
 
-    // dump_file(video_es, "/tmp/danpg1/video.mpg");
+    if (dumpVideo) {
+        dump_file(video_es, "/tmp/danpg1/video.mpg");
+    }
 
     mpeg1::Decoder decoder;
     decoder.set_data(video_es);
 
     auto start = std::chrono::steady_clock::now();
-    size_t frame_number = 0;
-    for (auto frame = decoder.next_frame(); frame.has_value(); frame = decoder.next_frame()) {
-        frame_number++;
-        std::println("Frame: {} {}", frame_number, frame->description);
+    size_t frame_number = 1;
+    for (auto frame = decoder.next_frame(frame_number >= startFrame); frame.has_value(); frame = decoder.next_frame(frame_number >= startFrame)) {
+
+        if (printFrameCount) {
+            std::println("Frame: {} {}", frame_number, frame->description);
+        }
 
         if (dumpFrames) {
             image::writeOutPPM(
@@ -79,6 +91,8 @@ int main(int argc, char** argv) {
                 frame->encoded_height,
                 frame->image);
         }
+
+        frame_number++;
     }
 
     auto end = std::chrono::steady_clock::now();

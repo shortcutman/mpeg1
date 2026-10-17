@@ -31,6 +31,7 @@ add_executable(danpg1
 target_link_libraries(
     danpg1
     libdanpg1
+    CLI11::CLI11
 )
 
 add_executable(danpg1_audiotest
@@ -79,4 +80,5 @@ gtest_discover_tests(danpg1_tests)
 find_package(SDL3 REQUIRED)
 include(vendor/metalcpp/metalcpp.cmake)
 include(vendor/imgui/imgui.cmake)
+include(vendor/cli11/cli11.cmake)
 include(player/player.cmake)
