@@ -72,19 +72,28 @@ struct Frame {
     size_t encoded_width = 0;
     size_t encoded_height = 0;
     std::vector<Colour> image;
+    std::vector<int32_t> luma;
+    std::vector<int32_t> cb;
+    std::vector<int32_t> cr;
     std::string description;
 
     void resize(size_t width, size_t height) {
         encoded_width = width;
         encoded_height = height;
         image.resize(encoded_width * encoded_height);
+        luma.resize(encoded_width * encoded_height);
+        cb.resize((encoded_width / 2) * (encoded_height / 2));
+        cr.resize((encoded_width / 2) * (encoded_height / 2));
     }
 
     static Frame make_frame(size_t width, size_t height) {
         return Frame{
             .encoded_width = width,
             .encoded_height = height,
-            .image = std::vector<Colour>(width * height)
+            .image = std::vector<Colour>(width * height),
+            .luma = std::vector<int32_t>(width * height),
+            .cb = std::vector<int32_t>((width / 2) * (height / 2)),
+            .cr = std::vector<int32_t>((width / 2) * (height / 2))
         };
     }
 };
