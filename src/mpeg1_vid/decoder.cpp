@@ -42,15 +42,9 @@ std::expected<image::Frame, std::runtime_error> mpeg1::Decoder::next_frame(bool 
 
             if (_sequence.horizontal_size != old_sequence.horizontal_size ||
                 _sequence.vertical_size != old_sequence.vertical_size) {
-                auto pixel_count = _sequence.encoded_width() * _sequence.encoded_height();
 
-                _last_frame.encoded_width = _sequence.encoded_width();
-                _last_frame.encoded_height = _sequence.encoded_height();
-                _last_frame.image.resize(pixel_count);
-
-                _current_frame.encoded_width = _sequence.encoded_width();
-                _current_frame.encoded_height = _sequence.encoded_height();
-                _current_frame.image.resize(pixel_count);
+                _last_frame.resize(_sequence.encoded_width(), _sequence.encoded_height());
+                _current_frame.resize(_sequence.encoded_width(), _sequence.encoded_height());
             }
         } else if (code == mpeg1::start_code::group_of_pictures) {
             _gop = mpeg1::read_gop_header(_data);

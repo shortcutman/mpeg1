@@ -74,6 +74,12 @@ struct Frame {
     std::vector<Colour> image;
     std::string description;
 
+    void resize(size_t width, size_t height) {
+        encoded_width = width;
+        encoded_height = height;
+        image.resize(encoded_width * encoded_height);
+    }
+
     static Frame make_frame(size_t width, size_t height) {
         return Frame{
             .encoded_width = width,
