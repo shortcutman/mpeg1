@@ -47,6 +47,9 @@ namespace player {
         uint64_t _frames = 0;
         uint64_t _last_frame_time_ms = 0;
 
+        uint64_t _decoded_frames = 0;
+        uint64_t _total_decode_time_ms = 0;
+
         SDL_AudioSpec _audio_spec;
         SDL_AudioStream* _audio_stream;
 
@@ -59,6 +62,7 @@ namespace player {
         MTL::Texture* texture() const;
         void tick();
         float decode_frame_rate();
+        uint64_t avg_decode_time();
 
         bool isPlaying();
         void play();

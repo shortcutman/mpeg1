@@ -125,6 +125,10 @@ float player::Player::decode_frame_rate() {
     return _decode_frame_rate;
 }
 
+uint64_t player::Player::avg_decode_time() {
+    return _total_decode_time_ms / _decoded_frames;
+}
+
 bool player::Player::isPlaying() {
     return _play;
 }
@@ -170,8 +174,15 @@ void player::Player::buffer_video() {
             auto texture = reuse.back();
             reuse.pop_back();
 
+            auto start = SDL_GetTicks();
             auto frame = _video_decoder.next_frame();
+
             if (frame.has_value()) {
+
+                auto decode_duration = SDL_GetTicks() - start;
+                _total_decode_time_ms += decode_duration;
+                _decoded_frames++;
+
                 frame_to_texture(frame.value(), texture.get());
                 _edit_queue.acquire();
                 _frame_queue.push(texture);

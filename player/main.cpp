@@ -125,6 +125,8 @@ int main(int argc, char** argv) {
                 ImGui::Text("%s", std::format("Effective Frame Rate: {0:.2f}", decode_frame_rate).c_str());
             }
 
+            ImGui::Text("%s", std::format("Average frame decode time: {}", player.avg_decode_time()).c_str());
+
             // if (ImGui::Button("Next Frame")) {
             //     auto frame_res = decoder.next_frame();
             //     if (frame_res.has_value()) {
