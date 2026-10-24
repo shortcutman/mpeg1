@@ -49,11 +49,12 @@ int main(int argc, char** argv) {
     std::string input_filepath;
     bool dumpFrames = false, dumpVideo = false;
     bool printFrameCount = false;
-    uint64_t startFrame = 0;
+    uint64_t startFrame = 0, endFrame = 0;
 
     CLI::App app{"danpg1 MPEG1-Video inside MPEG2-TS decoder"};
     app.add_option("file", input_filepath, "Input video file.")->required();
-    app.add_option("--start-frame", startFrame, "Start decoding from input video frame number.");
+    app.add_option("--start-frame", startFrame, "Start decoding from input video at frame number.");
+    app.add_option("--end-frame", endFrame, "Finish decoding from input video at frame number.");
     app.add_flag("-F,--frame-count", printFrameCount, "Print incrementing frame count during decode.");
     app.add_flag("-D,--dump-frames", dumpFrames, "Dump decoded frames as PPM image files.");
     app.add_flag("--dump-video", dumpVideo, "Dump video elementary stream.");
@@ -76,9 +77,13 @@ int main(int argc, char** argv) {
     mpeg1::Decoder decoder;
     decoder.set_data(video_es);
 
+    // std::string input;
+    // std::print("Input to start decoding...");
+    // std::getline(std::cin, input);
+
     auto start = std::chrono::steady_clock::now();
     size_t frame_number = 1;
-    for (auto frame = decoder.next_frame(frame_number >= startFrame); frame.has_value(); frame = decoder.next_frame(frame_number >= startFrame)) {
+    for (auto frame = decoder.next_frame(frame_number >= startFrame); frame.has_value() && frame_number < endFrame; frame = decoder.next_frame(frame_number >= startFrame)) {
 
         if (printFrameCount) {
             std::println("Frame: {} {}", frame_number, frame->description);
