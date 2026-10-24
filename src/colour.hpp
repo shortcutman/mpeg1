@@ -5,9 +5,9 @@
 
 #pragma once
 
+#include <cstdint>
 #include <ostream>
 #include <span>
-#include <tuple>
 #include <vector>
 
 namespace image {
