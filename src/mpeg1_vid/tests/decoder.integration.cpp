@@ -52,6 +52,23 @@ TEST(DecoderIntegration, black_I_frame) {
         }));
 }
 
+TEST(DecoderIntegration, black_I_frame_ycbcr) {
+    auto input = read_file("../src/mpeg1_vid/tests/data/black_I_frame.es");
+    ASSERT_FALSE(input.empty());
+
+    mpeg1::Decoder d(mpeg1::Decoder::ImageFormat::YCbCr);
+    d.set_data(input);
+
+    auto frame_one = d.next_frame();
+    ASSERT_TRUE(frame_one.has_value()) << frame_one.error().what();
+    ASSERT_EQ(frame_one->encoded_width, 640);
+    ASSERT_EQ(frame_one->encoded_height, 272);
+
+    for (uint32_t i = 0; i < frame_one->encoded_width * frame_one->encoded_height; i++) {
+        ASSERT_EQ(frame_one->image[i].y, frame_one->luma[i]) << "Fail at pixel: " << i;
+    }
+}
+
 TEST(DecoderIntegration, eye_I_frame_P_frame) {
     auto input = read_file("../src/mpeg1_vid/tests/data/eye_I_frame_P_frame.es");
     ASSERT_FALSE(input.empty());
@@ -90,6 +107,31 @@ TEST(DecoderIntegration, eye_I_frame_P_frame) {
         [] (char a, std::byte b) {
             return a == std::to_integer<char>(b);
         }));
+}
+
+TEST(DecoderIntegration, eye_I_frame_P_frame_ycbcr) {
+    auto input = read_file("../src/mpeg1_vid/tests/data/eye_I_frame_P_frame.es");
+    ASSERT_FALSE(input.empty());
+
+    mpeg1::Decoder d(mpeg1::Decoder::ImageFormat::YCbCr);
+    d.set_data(input);
+
+    auto frame_one = d.next_frame();
+    ASSERT_TRUE(frame_one.has_value()) << frame_one.error().what();
+    ASSERT_EQ(frame_one->encoded_width, 640);
+    ASSERT_EQ(frame_one->encoded_height, 272);
+
+    for (uint32_t i = 0; i < frame_one->encoded_width * frame_one->encoded_height; i++) {
+        ASSERT_EQ(frame_one->image[i].y, frame_one->luma[i]) << "Fail at pixel: " << i;
+    }
+
+    auto frame_two = d.next_frame();
+    ASSERT_EQ(frame_two->encoded_width, 640);
+    ASSERT_EQ(frame_two->encoded_height, 272);
+
+    for (uint32_t i = 0; i < frame_two->encoded_width * frame_two->encoded_height; i++) {
+        ASSERT_EQ(frame_two->image[i].y, frame_two->luma[i]) << "Fail at pixel: " << i;
+    }
 }
 
 TEST(DecoderIntegration, eye_skip_I_frame_P_frame) {

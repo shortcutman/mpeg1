@@ -24,6 +24,45 @@ void mpeg1::copy_mb_to_image(int addr, const std::array<image::Colour, 256>& blo
     }
 }
 
+void mpeg1::copy_block_to_y(int mb_addr, int block_num, std::array<int, 8*8>& block, image::Frame& destination) {
+    size_t span = destination.encoded_width;
+    size_t span_mb = span / 16;
+    size_t addrHorizontal = mb_addr % span_mb;
+    size_t addrVertical = mb_addr / span_mb;
+
+    auto outIt = destination.luma.begin() + addrHorizontal * 16 + addrVertical * 16 * span;
+    outIt += (block_num == 1 || block_num == 3) ? 8 : 0;
+    outIt += (block_num == 2 || block_num == 3) ? span * 8 : 0;
+
+    for (auto i = 0; i < 8; i++) {
+        std::copy(block.begin() + i * 8, block.begin() + i * 8 + 8, outIt);
+        outIt += span;
+    }
+}
+
+void mpeg1::add_block_to_y(int mb_addr, int block_num, std::array<int, 8*8>& block, image::Frame& destination) {
+    size_t span = destination.encoded_width;
+    size_t span_mb = span / 16;
+    size_t addrHorizontal = mb_addr % span_mb;
+    size_t addrVertical = mb_addr / span_mb;
+
+    size_t start = addrHorizontal * 16 + addrVertical * 16 * span;
+    start += (block_num == 1 || block_num == 3) ? 8 : 0;
+    start += (block_num == 2 || block_num == 3) ? span * 8 : 0;
+
+    for (auto i = 0; i < 8; i++) {
+        destination.luma[start + 0] += block[i*8 + 0];
+        destination.luma[start + 1] += block[i*8 + 1];
+        destination.luma[start + 2] += block[i*8 + 2];
+        destination.luma[start + 3] += block[i*8 + 3];
+        destination.luma[start + 4] += block[i*8 + 4];
+        destination.luma[start + 5] += block[i*8 + 5];
+        destination.luma[start + 6] += block[i*8 + 6];
+        destination.luma[start + 7] += block[i*8 + 7];
+        start += span;
+    }
+}
+
 std::array<image::Colour, 256> mpeg1::copy_block_mv_from_image(int addr, std::tuple<int, int> motion_vector, const image::Frame& source) {
     size_t span = source.encoded_width;
     std::array<image::Colour, 256> block;
@@ -136,4 +175,57 @@ std::array<image::Colour, 256> mpeg1::copy_block_mv_from_image(int addr, std::tu
     mpeg1::assign_to_cr(block_cr, block);
 
     return block;
+}
+
+void mpeg1::copy_mv_block(int addr, std::tuple<int, int> motion_vector, const image::Frame& source, image::Frame& destination) {
+    size_t span = source.encoded_width;
+
+    auto addrHor = (addr % (span / 16)) * 16;
+    auto addrVer = (addr / (span / 16)) * 16;
+
+    auto [recon_right_for, recon_down_for] = motion_vector;
+
+    auto right_for_y = recon_right_for >> 1;
+    auto down_for_y = recon_down_for >> 1;
+    auto right_half_for_y = recon_right_for - 2 * right_for_y;
+    auto down_half_for_y = recon_down_for - 2 * down_for_y;
+
+    //implement copy of pels as per bottom of page 35
+    if (!right_half_for_y && !down_half_for_y) {
+        for (size_t y = 0; y < 16; y++) {
+            for (size_t x = 0; x < 16; x++) {
+                destination.luma[addrHor + x + (addrVer + y) * span] =
+                    source.luma.at(addrHor + right_for_y + x + (addrVer + down_for_y + y) * span);
+            }
+        }
+    } else if (!right_half_for_y && down_half_for_y) {
+        for (size_t y = 0; y < 16; y++) {
+            for (size_t x = 0; x < 16; x++) {
+                destination.luma[addrHor + x + (addrVer + y) * span] =
+                    (source.luma.at(addrHor + right_for_y + x + (addrVer + down_for_y + y) * span) +
+                    source.luma.at(addrHor + right_for_y + x + (addrVer + down_for_y + y + 1) * span) +
+                    1) / 2;
+            }
+        }
+    } else if (right_half_for_y && !down_half_for_y) {
+        for (size_t y = 0; y < 16; y++) {
+            for (size_t x = 0; x < 16; x++) {
+                destination.luma[addrHor + x + (addrVer + y) * span] =
+                    (source.luma.at(addrHor + right_for_y + x + (addrVer + down_for_y + y) * span) +
+                    source.luma.at(addrHor + right_for_y + x + 1 + (addrVer + down_for_y + y) * span) +
+                    1) / 2;
+            }
+        }
+    } else {
+        for (size_t y = 0; y < 16; y++) {
+            for (size_t x = 0; x < 16; x++) {
+                destination.luma[addrHor + x + (addrVer + y) * span] =
+                    (source.luma.at(addrHor + right_for_y + x + (addrVer + down_for_y + y) * span) +
+                    source.luma.at(addrHor + right_for_y + x + 1 + (addrVer + down_for_y + y) * span) +
+                    source.luma.at(addrHor + right_for_y + x + (addrVer + down_for_y + y + 1) * span) +
+                    source.luma.at(addrHor + right_for_y + x + 1 + (addrVer + down_for_y + y + 1) * span) +
+                    2) / 4;
+            }
+        }
+    }
 }

@@ -55,12 +55,13 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
             }
 
             if (macroblock.type.intra) {
-                auto block = read_intra_blocks(bits, macroblock_address);
+                auto block = read_intra_blocks(bits, macroblock_address, destination);
                 copy_mb_to_image(macroblock_address, block, destination);
             } else {
                 auto mv = mpeg1::calc_motion_vectors(_picture, macroblock, std::make_tuple(_mv_right_for_prev, _mv_down_for_prev));
                 std::tie(_mv_right_for_prev, _mv_down_for_prev) = mv;
                 auto block = copy_block_mv_from_image(macroblock_address, mv, source);
+                copy_mv_block(macroblock_address, mv, source, destination);
                 
                 if (macroblock.type.pattern) {
                     for (size_t i = 0; i < 6; i++) {
@@ -72,6 +73,7 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
 
                         if (i < 4) {
                             assign_to_y(dct, block, i);
+                            add_block_to_y(macroblock_address, i, dct, destination);
                         } else if (i == 4) {
                             assign_to_cb(dct, block);
                         } else if (i == 5) {
@@ -104,89 +106,16 @@ void mpeg1::SliceDecoder::reset() {
 }
 
 std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bitspan& data,
-                                                                      int mb_addr) {
+                                                                      int mb_addr,
+                                                                      image::Frame& destination) {
     std::array<image::Colour, 256> block;
+
     for (size_t block_i = 0; block_i < 6; block_i++) {
-        std::array<int, 64> dct_recon;
-        std::fill(dct_recon.begin(), dct_recon.end(), 0);
-        int dct_dc_size = 0;
-        int* dct_dc_past = &_dct_dc_y_past;
-
-        if (block_i < 4) {
-            // dct_dc_size_luminance
-            dct_dc_size = mpeg1::BLOCK_DCT_DC_SIZE_LUMINANCE.next_symbol(data);
-        } else {
-            // dct_dc_size_chrominance
-            dct_dc_size = mpeg1::BLOCK_DCT_DC_SIZE_CHROMINANCE.next_symbol(data);
-
-            if (block_i == 4) {
-                dct_dc_past = &_dct_dc_cb_past;
-            } else if (block_i == 5) {
-                dct_dc_past = &_dct_dc_cr_past;
-            }
-        }
-
-        if (dct_dc_size > 0) {
-            size_t dct_dc_differential = data.read_bits_be(dct_dc_size);
-            dct_recon[0] = calc_dct_zz_zero(dct_dc_size, dct_dc_differential);
-        }
-        dct_recon[0] *= 8;
-        if ((mb_addr - _past_intra_address > 1) &&
-            (block_i == 0 || block_i == 4 || block_i == 5)) {
-            dct_recon[0] = (128 * 8) + dct_recon[0];
-        } else {
-            dct_recon[0] = *dct_dc_past + dct_recon[0];
-        }
-        *dct_dc_past = dct_recon[0];
-
-        size_t dct_i = 0;
-        while (data.peek_bits_be(2) != 0b10) {
-            DCTCoeff next;
-
-            if (data.peek_bits_be(6) == 0b000001) {
-                //escape code
-                data.read_bits_be(6);
-                next.run = data.read_bits_be(6);
-
-                next.level = data.read_bits_be(8);
-                if (next.level == 0x80 || next.level == 0x00) {
-                    next.level <<= 8;
-                    next.level |= data.read_bits_be(8);
-                } else if (next.level > 127) {
-                    next.level -= 256;
-                }
-            } else {
-                next = mpeg1::BLOCK_DCT_COEFF_NEXT.next_symbol(data);
-                auto sign = data.read_bits_be(1);
-                if (sign == 1) {
-                    next.level *= -1;
-                }
-            }
-            
-            dct_i += next.run + 1;
-            auto index = mpeg1::ZIGZAG_INDEX[dct_i];
-            dct_recon[index] = (2 * next.level * _slice.quantizer_scale * _sequence.intra_quantizer_matrix[index]) / 16;
-
-            if ((dct_recon[index] & 1) == 0) {
-                dct_recon[index] -= sign(dct_recon[index]);
-            }
-
-            if (dct_recon[index] > 2047) {
-                dct_recon[index] = 2047;
-            } else if (dct_recon[index] < -2048) {
-                dct_recon[index] = -2048;
-            }
-        }
-
-        data.read_bits_be(2);
-
-        image::idct(dct_recon);
-        for (auto& val : dct_recon) {
-            val = std::max(0, std::min(val, 255));
-        }
+        auto dct_recon = read_intra_block(data, mb_addr, block_i);
 
         if (block_i < 4) {
             assign_to_y(dct_recon, block, block_i);
+            copy_block_to_y(mb_addr, block_i, dct_recon, destination);
         } else if (block_i == 4) {
             assign_to_cb(dct_recon, block);
         } else if (block_i == 5) {
@@ -197,6 +126,87 @@ std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bits
     _past_intra_address = mb_addr;
 
     return block;
+}
+
+std::array<int32_t, 8*8> mpeg1::SliceDecoder::read_intra_block(util::bitspan& data, int mb_addr, int block_num) {
+    std::array<int, 64> dct_recon{};
+    int dct_dc_size = 0;
+    int* dct_dc_past = &_dct_dc_y_past;
+
+    if (block_num < 4) {
+        // dct_dc_size_luminance
+        dct_dc_size = mpeg1::BLOCK_DCT_DC_SIZE_LUMINANCE.next_symbol(data);
+    } else {
+        // dct_dc_size_chrominance
+        dct_dc_size = mpeg1::BLOCK_DCT_DC_SIZE_CHROMINANCE.next_symbol(data);
+
+        if (block_num == 4) {
+            dct_dc_past = &_dct_dc_cb_past;
+        } else if (block_num == 5) {
+            dct_dc_past = &_dct_dc_cr_past;
+        }
+    }
+
+    if (dct_dc_size > 0) {
+        size_t dct_dc_differential = data.read_bits_be(dct_dc_size);
+        dct_recon[0] = calc_dct_zz_zero(dct_dc_size, dct_dc_differential);
+    }
+    dct_recon[0] *= 8;
+    if ((mb_addr - _past_intra_address > 1) &&
+        (block_num == 0 || block_num == 4 || block_num == 5)) {
+        dct_recon[0] = (128 * 8) + dct_recon[0];
+    } else {
+        dct_recon[0] = *dct_dc_past + dct_recon[0];
+    }
+    *dct_dc_past = dct_recon[0];
+
+    size_t dct_i = 0;
+    while (data.peek_bits_be(2) != 0b10) {
+        DCTCoeff next;
+
+        if (data.peek_bits_be(6) == 0b000001) {
+            //escape code
+            data.read_bits_be(6);
+            next.run = data.read_bits_be(6);
+
+            next.level = data.read_bits_be(8);
+            if (next.level == 0x80 || next.level == 0x00) {
+                next.level <<= 8;
+                next.level |= data.read_bits_be(8);
+            } else if (next.level > 127) {
+                next.level -= 256;
+            }
+        } else {
+            next = mpeg1::BLOCK_DCT_COEFF_NEXT.next_symbol(data);
+            auto sign = data.read_bits_be(1);
+            if (sign == 1) {
+                next.level *= -1;
+            }
+        }
+        
+        dct_i += next.run + 1;
+        auto index = mpeg1::ZIGZAG_INDEX[dct_i];
+        dct_recon[index] = (2 * next.level * _slice.quantizer_scale * _sequence.intra_quantizer_matrix[index]) / 16;
+
+        if ((dct_recon[index] & 1) == 0) {
+            dct_recon[index] -= sign(dct_recon[index]);
+        }
+
+        if (dct_recon[index] > 2047) {
+            dct_recon[index] = 2047;
+        } else if (dct_recon[index] < -2048) {
+            dct_recon[index] = -2048;
+        }
+    }
+
+    data.read_bits_be(2);
+
+    image::idct(dct_recon);
+    for (auto& val : dct_recon) {
+        val = std::max(0, std::min(val, 255));
+    }
+
+    return dct_recon;
 }
 
 std::array<int, 64> mpeg1::SliceDecoder::read_block(util::bitspan& data, size_t block_index) {
