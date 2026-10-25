@@ -156,6 +156,18 @@ TEST(DecoderIntegration, eye_I_frame_P_frame_ycbcr) {
     for (uint32_t i = 0; i < frame_two->encoded_width * frame_two->encoded_height; i++) {
         ASSERT_EQ(frame_two->image[i].y, frame_two->luma[i]) << "Fail at pixel: " << i;
     }
+
+    for (uint32_t y = 0; y < frame_two->encoded_height; y += 2) {
+        for (uint32_t x = 0; x < frame_two->encoded_width; x += 2) {
+            ASSERT_EQ(frame_two->image[y * frame_two->encoded_width + x].cb,
+                      frame_two->cb[(y / 2) * frame_two->cb.width() + x / 2])
+                      << "Cb Fail at pixel y:" << y << " x: " << x;
+
+            ASSERT_EQ(frame_two->image[y * frame_two->encoded_width + x].cr,
+                      frame_two->cr[y / 2 * frame_two->cr.width() + x / 2])
+                      << "Cr Fail at pixel y:" << y << " x: " << x;
+        }
+    }
 }
 
 TEST(DecoderIntegration, eye_skip_I_frame_P_frame) {

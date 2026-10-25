@@ -76,8 +76,10 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
                             add_block_to_y(macroblock_address, i, dct, destination);
                         } else if (i == 4) {
                             assign_to_cb(dct, block);
+                            add_block_to_buff(macroblock_address, dct, destination.cb);
                         } else if (i == 5) {
                             assign_to_cr(dct, block);
+                            add_block_to_buff(macroblock_address, dct, destination.cr);
                         }
                     }
                 }

@@ -257,4 +257,68 @@ void mpeg1::copy_mv_block(int addr, std::tuple<int, int> motion_vector, const im
             }
         }
     }
+
+    //chroma blue and red
+    auto right_for_c = (recon_right_for / 2) >> 1;
+    auto down_for_c = (recon_down_for / 2) >> 1;
+    auto right_half_for_c = (recon_right_for / 2) - (2 * right_for_c);
+    auto down_half_for_c = (recon_down_for / 2) - (2 * down_for_c);
+
+    addrHor /= 2;
+    addrVer /= 2;
+    span /= 2;
+
+    if (!right_half_for_c && !down_half_for_c) {
+        for (size_t y = 0; y < 8; y++) {
+            for (size_t x = 0; x < 8; x++) {
+                destination.cb.at(addrHor + x + (addrVer + y) * span) =
+                    source.cb.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y)) * span);
+                destination.cr.at(addrHor + x + (addrVer + y) * span) =
+                    source.cr.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y)) * span);
+            }
+        }
+    } else if (!right_half_for_c && down_half_for_c) {
+        for (size_t y = 0; y < 8; y++) {
+            for (size_t x = 0; x < 8; x++) {
+                destination.cb.at(addrHor + x + (addrVer + y) * span) = 
+                    (source.cb.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y) ) * span) +
+                    source.cb.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y + 1)) * span) +
+                    1) / 2;
+                destination.cr.at(addrHor + x + (addrVer + y) * span) = 
+                    (source.cr.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y)) * span) +
+                    source.cr.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y + 1)) * span) +
+                    1) / 2;
+            }
+        }
+    } else if (right_half_for_c && !down_half_for_c) {
+        for (size_t y = 0; y < 8; y++) {
+            for (size_t x = 0; x < 8; x++) {
+                destination.cb.at(addrHor + x + (addrVer + y) * span) = 
+                    (source.cb.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y)) * span) +
+                    source.cb.at(addrHor + (right_for_c + x + 1) + (addrVer + (down_for_c + y)) * span) +
+                    1) / 2;
+                destination.cr.at(addrHor + x + (addrVer + y) * span) = 
+                    (source.cr.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y)) * span) +
+                    source.cr.at(addrHor + (right_for_c + x + 1) + (addrVer + (down_for_c + y)) * span) +
+                    1) / 2;
+            }
+        }
+    } else {
+        for (size_t y = 0; y < 8; y++) {
+            for (size_t x = 0; x < 8; x++) {
+                destination.cb.at(addrHor + x + (addrVer + y) * span) = 
+                    (source.cb.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y)) * span) +
+                    source.cb.at(addrHor + (right_for_c + x + 1) + (addrVer + (down_for_c + y)) * span) +
+                    source.cb.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y + 1)) * span) +
+                    source.cb.at(addrHor + (right_for_c + x + 1) + (addrVer + (down_for_c + y + 1)) * span) +
+                    2) / 4;
+                destination.cr.at(addrHor + x + (addrVer + y) * span) = 
+                    (source.cr.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y)) * span) +
+                    source.cr.at(addrHor + (right_for_c + x + 1) + (addrVer + (down_for_c + y)) * span) +
+                    source.cr.at(addrHor + (right_for_c + x) + (addrVer + (down_for_c + y + 1)) * span) +
+                    source.cr.at(addrHor + (right_for_c + x + 1) + (addrVer + (down_for_c + y + 1)) * span) +
+                    2) / 4;
+            }
+        }
+    }
 }
