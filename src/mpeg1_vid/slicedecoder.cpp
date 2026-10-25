@@ -118,8 +118,10 @@ std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bits
             copy_block_to_y(mb_addr, block_i, dct_recon, destination);
         } else if (block_i == 4) {
             assign_to_cb(dct_recon, block);
+            copy_block_to_buff(mb_addr, dct_recon, destination.cb);
         } else if (block_i == 5) {
             assign_to_cr(dct_recon, block);
+            copy_block_to_buff(mb_addr, dct_recon, destination.cr);
         }
     }
 

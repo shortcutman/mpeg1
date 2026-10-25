@@ -5,8 +5,6 @@
 
 #include "copy.hpp"
 
-#include "mpeg1.hpp"
-
 #include <algorithm>
 
 void mpeg1::copy_mb_to_image(int addr, const std::array<image::Colour, 256>& block, image::Frame& frame) {
@@ -37,6 +35,18 @@ void mpeg1::copy_block_to_y(int mb_addr, int block_num, std::array<int, 8*8>& bl
     for (auto i = 0; i < 8; i++) {
         std::copy(block.begin() + i * 8, block.begin() + i * 8 + 8, outIt);
         outIt += span;
+    }
+}
+
+void mpeg1::copy_block_to_buff(int mb_addr, mpeg1::Block& block, image::PixelBuffer& destination) {
+    size_t addrHorizontal = mb_addr % destination.span_mb();
+    size_t addrVertical = mb_addr / destination.span_mb();
+
+    auto outIt = destination.begin() + addrHorizontal * 8 + addrVertical * 8 * destination.width();
+
+    for (auto i = 0; i < 8; i++) {
+        std::copy(block.begin() + i * 8, block.begin() + i * 8 + 8, outIt);
+        outIt += destination.width();
     }
 }
 
