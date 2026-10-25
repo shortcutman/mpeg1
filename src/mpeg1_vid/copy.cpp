@@ -73,6 +73,25 @@ void mpeg1::add_block_to_y(int mb_addr, int block_num, std::array<int, 8*8>& blo
     }
 }
 
+void mpeg1::add_block_to_buff(int mb_addr, mpeg1::Block& block, image::PixelBuffer& destination) {
+    size_t addrHorizontal = mb_addr % destination.span_mb();
+    size_t addrVertical = mb_addr / destination.span_mb();
+
+    auto outIt = destination.begin() + addrHorizontal * 8 + addrVertical * 8 * destination.width();
+
+    for (auto i = 0; i < 8; i++) {
+        *(outIt++) += block[i*8 + 0];
+        *(outIt++) += block[i*8 + 1];
+        *(outIt++) += block[i*8 + 2];
+        *(outIt++) += block[i*8 + 3];
+        *(outIt++) += block[i*8 + 4];
+        *(outIt++) += block[i*8 + 5];
+        *(outIt++) += block[i*8 + 6];
+        *(outIt++) += block[i*8 + 7];
+        outIt += destination.width() - 8;
+    }
+}
+
 std::array<image::Colour, 256> mpeg1::copy_block_mv_from_image(int addr, std::tuple<int, int> motion_vector, const image::Frame& source) {
     size_t span = source.encoded_width;
     std::array<image::Colour, 256> block;

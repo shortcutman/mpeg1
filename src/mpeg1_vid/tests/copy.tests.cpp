@@ -7,6 +7,32 @@
 
 #include <gtest/gtest.h>
 
+TEST(Copy, copy_block_to_buff) {
+    image::PixelBuffer buff(8, 8);
+    std::fill(buff.begin(), buff.end(), 0);
+
+    mpeg1::Block block;
+    std::fill(block.begin(), block.end(), 1);
+
+    mpeg1::add_block_to_buff(0, block, buff);
+    for (auto i : buff) {
+        EXPECT_EQ(i, 1);
+    }
+}
+
+TEST(Copy, add_block_to_buff) {
+    image::PixelBuffer buff(8, 8);
+    std::fill(buff.begin(), buff.end(), 1);
+
+    mpeg1::Block block;
+    std::fill(block.begin(), block.end(), 2);
+
+    mpeg1::add_block_to_buff(0, block, buff);
+    for (auto i : buff) {
+        EXPECT_EQ(i, 3);
+    }
+}
+
 TEST(Copy, copy_block_mv_from_image_no_movement) {
     auto source = image::Frame::make_frame(16, 16);
     
