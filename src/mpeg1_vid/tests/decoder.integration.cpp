@@ -65,7 +65,19 @@ TEST(DecoderIntegration, black_I_frame_ycbcr) {
     ASSERT_EQ(frame_one->encoded_height, 272);
 
     for (uint32_t i = 0; i < frame_one->encoded_width * frame_one->encoded_height; i++) {
-        ASSERT_EQ(frame_one->image[i].y, frame_one->luma[i]) << "Fail at pixel: " << i;
+        ASSERT_EQ(frame_one->image[i].y, frame_one->luma[i]) << "Luma Fail at pixel: " << i;
+    }
+
+    for (uint32_t y = 0; y < frame_one->encoded_height; y += 2) {
+        for (uint32_t x = 0; x < frame_one->encoded_width; x += 2) {
+            ASSERT_EQ(frame_one->image[y * frame_one->encoded_width + x].cb,
+                      frame_one->cb[y / 2 * frame_one->cb.width() + x / 2])
+                      << "Cb Fail at pixel y:" << y << " x: " << x;
+
+            ASSERT_EQ(frame_one->image[y * frame_one->encoded_width + x].cr,
+                      frame_one->cr[y / 2 * frame_one->cr.width() + x / 2])
+                      << "Cr Fail at pixel y:" << y << " x: " << x;
+        }
     }
 }
 
@@ -123,6 +135,18 @@ TEST(DecoderIntegration, eye_I_frame_P_frame_ycbcr) {
 
     for (uint32_t i = 0; i < frame_one->encoded_width * frame_one->encoded_height; i++) {
         ASSERT_EQ(frame_one->image[i].y, frame_one->luma[i]) << "Fail at pixel: " << i;
+    }
+
+    for (uint32_t y = 0; y < frame_one->encoded_height; y += 2) {
+        for (uint32_t x = 0; x < frame_one->encoded_width; x += 2) {
+            ASSERT_EQ(frame_one->image[y * frame_one->encoded_width + x].cb,
+                      frame_one->cb[(y / 2) * frame_one->cb.width() + x / 2])
+                      << "Cb Fail at pixel y:" << y << " x: " << x;
+
+            ASSERT_EQ(frame_one->image[y * frame_one->encoded_width + x].cr,
+                      frame_one->cr[y / 2 * frame_one->cr.width() + x / 2])
+                      << "Cr Fail at pixel y:" << y << " x: " << x;
+        }
     }
 
     auto frame_two = d.next_frame();
