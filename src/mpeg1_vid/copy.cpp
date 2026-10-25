@@ -22,22 +22,6 @@ void mpeg1::copy_mb_to_image(int addr, const std::array<image::Colour, 256>& blo
     }
 }
 
-void mpeg1::copy_block_to_y(int mb_addr, int block_num, std::array<int, 8*8>& block, image::Frame& destination) {
-    size_t span = destination.encoded_width;
-    size_t span_mb = span / 16;
-    size_t addrHorizontal = mb_addr % span_mb;
-    size_t addrVertical = mb_addr / span_mb;
-
-    auto outIt = destination.luma.begin() + addrHorizontal * 16 + addrVertical * 16 * span;
-    outIt += (block_num == 1 || block_num == 3) ? 8 : 0;
-    outIt += (block_num == 2 || block_num == 3) ? span * 8 : 0;
-
-    for (auto i = 0; i < 8; i++) {
-        std::copy(block.begin() + i * 8, block.begin() + i * 8 + 8, outIt);
-        outIt += span;
-    }
-}
-
 void mpeg1::copy_block_to_buff(int mb_addr, mpeg1::Block& block, image::PixelBuffer& destination) {
     size_t addrHorizontal = mb_addr % destination.span_mb();
     size_t addrVertical = mb_addr / destination.span_mb();
@@ -47,29 +31,6 @@ void mpeg1::copy_block_to_buff(int mb_addr, mpeg1::Block& block, image::PixelBuf
     for (auto i = 0; i < 8; i++) {
         std::copy(block.begin() + i * 8, block.begin() + i * 8 + 8, outIt);
         outIt += destination.width();
-    }
-}
-
-void mpeg1::add_block_to_y(int mb_addr, int block_num, std::array<int, 8*8>& block, image::Frame& destination) {
-    size_t span = destination.encoded_width;
-    size_t span_mb = span / 16;
-    size_t addrHorizontal = mb_addr % span_mb;
-    size_t addrVertical = mb_addr / span_mb;
-
-    size_t start = addrHorizontal * 16 + addrVertical * 16 * span;
-    start += (block_num == 1 || block_num == 3) ? 8 : 0;
-    start += (block_num == 2 || block_num == 3) ? span * 8 : 0;
-
-    for (auto i = 0; i < 8; i++) {
-        destination.luma[start + 0] += block[i*8 + 0];
-        destination.luma[start + 1] += block[i*8 + 1];
-        destination.luma[start + 2] += block[i*8 + 2];
-        destination.luma[start + 3] += block[i*8 + 3];
-        destination.luma[start + 4] += block[i*8 + 4];
-        destination.luma[start + 5] += block[i*8 + 5];
-        destination.luma[start + 6] += block[i*8 + 6];
-        destination.luma[start + 7] += block[i*8 + 7];
-        start += span;
     }
 }
 

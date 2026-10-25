@@ -23,6 +23,25 @@ namespace {
         else if (in == 0) return 0;
         else return -1;
     }
+
+    int mb_luma_to_block(int mb_addr, uint32_t block_num, const image::PixelBuffer& destination) {
+        size_t span_mb = destination.width() / 16;
+        size_t addrHorizontal = mb_addr % span_mb;
+        size_t addrVertical = mb_addr / span_mb;
+
+        addrHorizontal *= 2;
+        addrVertical *= 2;
+
+        if (block_num == 1 || block_num == 3) {
+            addrHorizontal += 1;
+        }
+
+        if (block_num == 2 || block_num == 3) {
+            addrVertical += 1;
+        }
+
+        return addrVertical * destination.span_mb() + addrHorizontal;
+    }
 }
 
 mpeg1::SliceDecoder::SliceDecoder(mpeg1::SequenceHeader sequence, mpeg1::PictureHeader picture)
@@ -73,7 +92,8 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
 
                         if (i < 4) {
                             assign_to_y(dct, block, i);
-                            add_block_to_y(macroblock_address, i, dct, destination);
+                            auto blockAddr = mb_luma_to_block(macroblock_address, i, destination.luma);
+                            add_block_to_buff(blockAddr, dct, destination.luma);
                         } else if (i == 4) {
                             assign_to_cb(dct, block);
                             add_block_to_buff(macroblock_address, dct, destination.cb);
@@ -117,7 +137,8 @@ std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bits
 
         if (block_i < 4) {
             assign_to_y(dct_recon, block, block_i);
-            copy_block_to_y(mb_addr, block_i, dct_recon, destination);
+            auto blockAddr = mb_luma_to_block(mb_addr, block_i, destination.luma);
+            copy_block_to_buff(blockAddr, dct_recon, destination.luma);
         } else if (block_i == 4) {
             assign_to_cb(dct_recon, block);
             copy_block_to_buff(mb_addr, dct_recon, destination.cb);
