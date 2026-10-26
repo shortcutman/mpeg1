@@ -24,17 +24,9 @@ std::vector<std::byte> read_file(const std::string& filename) {
 }
 
 void frame_to_texture(const image::Frame& frame, MTL::Texture* texture) {
-    std::vector<std::array<float, 4>> img_float;
-
-    for (auto c : frame.image) {
-        float r = c.r / 255.f;
-        float g = c.g / 255.f;
-        float b = c.b / 255.f;
-        img_float.push_back({r, g, b, 1.f});
-    }
-
+    auto image = frame.as_float_rgba_vector();
     MTL::Region region = {0, 0, 0, frame.encoded_width, frame.encoded_height, 1};
-    texture->replaceRegion(region, 0, img_float.data(), 16 * frame.encoded_width);
+    texture->replaceRegion(region, 0, image.data(), 16 * frame.encoded_width);
 }
 
 }

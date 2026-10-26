@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     std::string input_filepath;
     bool dumpFrames = false, dumpVideo = false;
     bool printFrameCount = false;
-    uint64_t startFrame = 0, endFrame = 0;
+    uint64_t startFrame = 0, endFrame = std::numeric_limits<uint64_t>::max();
 
     CLI::App app{"danpg1 MPEG1-Video inside MPEG2-TS decoder"};
     app.add_option("file", input_filepath, "Input video file.")->required();
@@ -92,9 +92,7 @@ int main(int argc, char** argv) {
         if (dumpFrames) {
             image::writeOutPPM(
                 std::format("/tmp/danpg1/frame_{:04d}_{}.ppm", frame_number, frame->description),
-                frame->encoded_width,
-                frame->encoded_height,
-                frame->image);
+                *frame);
         }
 
         frame_number++;

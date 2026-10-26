@@ -8,6 +8,7 @@
 #include "util.hpp"
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <fstream>
 #include <print>
 #include <filesystem>
@@ -41,7 +42,7 @@ TEST(DecoderIntegration, black_I_frame) {
     ASSERT_EQ(frame_one->encoded_height, 272);
 
     std::stringstream ss;
-    image::writeOutPPM(ss, frame_one->encoded_width, frame_one->encoded_height, frame_one->image);
+    image::writeOutPPM(ss, *frame_one);
     auto contents = ss.str();
 
     auto expected = read_file("../src/mpeg1_vid/tests/data/black_I_frame.ppm");
@@ -95,7 +96,7 @@ TEST(DecoderIntegration, eye_I_frame_P_frame) {
 
     std::stringstream ss;
 
-    image::writeOutPPM(ss, frame_one->encoded_width, frame_one->encoded_height, frame_one->image);
+    image::writeOutPPM(ss, *frame_one);
     auto contents = ss.str();
 
     auto expected = read_file("../src/mpeg1_vid/tests/data/eye_I_frame.ppm");
@@ -111,7 +112,7 @@ TEST(DecoderIntegration, eye_I_frame_P_frame) {
     ASSERT_EQ(frame_two->encoded_width, 640);
     ASSERT_EQ(frame_two->encoded_height, 272);
 
-    image::writeOutPPM(ss, frame_two->encoded_width, frame_two->encoded_height, frame_two->image);
+    image::writeOutPPM(ss, *frame_two);
     auto contents2 = ss.str();
     auto expected2 = read_file("../src/mpeg1_vid/tests/data/eye_P_frame.ppm");
 
@@ -182,26 +183,23 @@ TEST(DecoderIntegration, eye_skip_I_frame_P_frame) {
     ASSERT_EQ(frame_one->encoded_width, 640);
     ASSERT_EQ(frame_one->encoded_height, 272);
 
-    for (auto c : frame_one->image) {
-        const auto check = image::Colour{.r = 0, .g = 135, .b =0};
-        ASSERT_EQ(c, check);
-    }
-
-    std::stringstream ss;
+    ASSERT_TRUE(std::all_of(frame_one->luma.begin(), frame_one->luma.end(), [](int32_t i) { return i == 0;}));
+    ASSERT_TRUE(std::all_of(frame_one->cb.begin(), frame_one->cb.end(), [](int32_t i) { return i == 0;}));
+    ASSERT_TRUE(std::all_of(frame_one->cr.begin(), frame_one->cr.end(), [](int32_t i) { return i == 0;}));
 
     auto frame_two = d.next_frame();
     ASSERT_EQ(frame_two->encoded_width, 640);
     ASSERT_EQ(frame_two->encoded_height, 272);
 
-    uint64_t count = 0;
-    for (auto c : frame_two->image) {
-        const auto check = image::Colour{.r = 0, .g = 135, .b =0};
-        if (c == check) {
-            count++;
-        }
-    }
+    std::stringstream ss;
+    image::writeOutPPM(ss, *frame_two);
+    auto contents = ss.str();
+    auto expected = read_file("../src/mpeg1_vid/tests/data/post_skip_frame.ppm");
 
-    ASSERT_EQ(count, 108252);
+    ASSERT_TRUE(std::equal(contents.begin(), contents.end(), expected.begin(),
+        [] (char a, std::byte b) {
+            return a == std::to_integer<char>(b);
+        }));
 }
 
 TEST(DecoderIntegration, frame_end_macroblock_skip_next_pic_header) {

@@ -154,12 +154,14 @@ struct Frame {
             .cr = PixelBuffer(width / 2, height / 2)
         };
     }
+
+    std::vector<std::array<float, 4>> as_float_rgba_vector() const;
 };
 
 Colour ycbcrToRGB(const Colour& ycbcr);
 void ycbcrToRGBOverMCU(Colour* data, size_t width, size_t x, size_t y);
 
-void writeOutPPM(std::ostream& out, size_t width, size_t height, std::span<Colour> data);
-void writeOutPPM(std::string filepath, size_t width, size_t height, std::span<Colour> data);
+void writeOutPPM(std::ostream& out, Frame data);
+void writeOutPPM(std::string filepath, Frame data);
 
 }
