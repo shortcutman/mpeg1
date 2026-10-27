@@ -35,7 +35,9 @@ TEST(SliceDecoderTest, read_intra_macroblock_and_block_data) {
     auto addr = slice_dec.decode(span, image::Frame{}, frame);
     EXPECT_EQ(addr, 0);
 
-    ASSERT_TRUE(std::all_of(frame.image.begin(), frame.image.end(), std::bind(std::equal_to<>(), std::placeholders::_1, image::Colour{.y = 17, .cb = 128, .cr = 128})));
+    ASSERT_TRUE(std::all_of(frame.luma.begin(), frame.luma.end(), std::bind(std::equal_to<>(), std::placeholders::_1, 17)));
+    ASSERT_TRUE(std::all_of(frame.cb.begin(), frame.cb.end(), std::bind(std::equal_to<>(), std::placeholders::_1, 128)));
+    ASSERT_TRUE(std::all_of(frame.cr.begin(), frame.cr.end(), std::bind(std::equal_to<>(), std::placeholders::_1, 128)));
 }
 
 TEST(SliceDecoderTest, read_predictive_macroblock_and_block_data) {
