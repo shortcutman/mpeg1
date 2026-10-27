@@ -129,7 +129,6 @@ public:
 struct Frame {
     size_t encoded_width = 0;
     size_t encoded_height = 0;
-    std::vector<Colour> image;
     PixelBuffer luma;
     PixelBuffer cb;
     PixelBuffer cr;
@@ -138,7 +137,6 @@ struct Frame {
     void resize(size_t width, size_t height) {
         encoded_width = width;
         encoded_height = height;
-        image.resize(encoded_width * encoded_height);
         luma.resize(encoded_width, encoded_height);
         cb.resize(encoded_width / 2, encoded_height / 2);
         cr.resize(encoded_width / 2, encoded_height / 2);
@@ -148,7 +146,6 @@ struct Frame {
         return Frame{
             .encoded_width = width,
             .encoded_height = height,
-            .image = std::vector<Colour>(width * height),
             .luma = PixelBuffer(width, height),
             .cb = PixelBuffer(width / 2, height / 2),
             .cr = PixelBuffer(width / 2, height / 2)

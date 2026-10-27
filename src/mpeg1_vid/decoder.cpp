@@ -119,18 +119,11 @@ std::expected<std::tuple<uint32_t, std::span<std::byte>>, std::runtime_error>
 }
 
 image::Frame mpeg1::Decoder::assemble_frame() {
-    std::copy(_current_frame.image.begin(), _current_frame.image.end(), _last_frame.image.begin());
     std::copy(_current_frame.luma.begin(), _current_frame.luma.end(), _last_frame.luma.begin());
     std::copy(_current_frame.cb.begin(), _current_frame.cb.end(), _last_frame.cb.begin());
     std::copy(_current_frame.cr.begin(), _current_frame.cr.end(), _last_frame.cr.begin());
 
     auto imgcopy = _current_frame;
-
-    if (_format == ImageFormat::RGB) {
-        for (auto& c : imgcopy.image) {
-            c = image::ycbcrToRGB(c);
-        }
-    }
 
     // imgcopy.description = mpeg1::ct_to_string(_picture.coding_type);
     

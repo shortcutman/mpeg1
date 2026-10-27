@@ -34,7 +34,7 @@ namespace mpeg1 {
     protected:
         void reset();
 
-        std::array<image::Colour, 256> read_intra_blocks(util::bitspan& data, int mb_addr, image::Frame& destination);
+        void read_intra_blocks(util::bitspan& data, int mb_addr, image::Frame& destination);
         std::array<int32_t, 8*8> read_intra_block(util::bitspan& data, int mb_addr, int block_num);
         std::array<int, 64> read_block(util::bitspan& data, size_t block_index);
 

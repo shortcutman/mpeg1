@@ -74,12 +74,10 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
             }
 
             if (macroblock.type.intra) {
-                auto block = read_intra_blocks(bits, macroblock_address, destination);
-                copy_mb_to_image(macroblock_address, block, destination);
+                read_intra_blocks(bits, macroblock_address, destination);
             } else {
                 auto mv = mpeg1::calc_motion_vectors(_picture, macroblock, std::make_tuple(_mv_right_for_prev, _mv_down_for_prev));
                 std::tie(_mv_right_for_prev, _mv_down_for_prev) = mv;
-                auto block = copy_block_mv_from_image(macroblock_address, mv, source);
                 copy_mv_block(macroblock_address, mv, source, destination);
                 
                 if (macroblock.type.pattern) {
@@ -91,20 +89,15 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
                         auto dct = read_block(bits, i);
 
                         if (i < 4) {
-                            assign_to_y(dct, block, i);
                             auto blockAddr = mb_luma_to_block(macroblock_address, i, destination.luma);
                             add_block_to_buff(blockAddr, dct, destination.luma);
                         } else if (i == 4) {
-                            assign_to_cb(dct, block);
                             add_block_to_buff(macroblock_address, dct, destination.cb);
                         } else if (i == 5) {
-                            assign_to_cr(dct, block);
                             add_block_to_buff(macroblock_address, dct, destination.cr);
                         }
                     }
                 }
-
-                copy_mb_to_image(macroblock_address, block, destination);
             }
 
             previous_macroblock_address = macroblock_address;
@@ -127,30 +120,23 @@ void mpeg1::SliceDecoder::reset() {
     _mv_down_for_prev = 0;
 }
 
-std::array<image::Colour, 256> mpeg1::SliceDecoder::read_intra_blocks(util::bitspan& data,
-                                                                      int mb_addr,
-                                                                      image::Frame& destination) {
-    std::array<image::Colour, 256> block;
-
+void mpeg1::SliceDecoder::read_intra_blocks(util::bitspan& data,
+                                            int mb_addr,
+                                            image::Frame& destination) {
     for (size_t block_i = 0; block_i < 6; block_i++) {
         auto dct_recon = read_intra_block(data, mb_addr, block_i);
 
         if (block_i < 4) {
-            assign_to_y(dct_recon, block, block_i);
             auto blockAddr = mb_luma_to_block(mb_addr, block_i, destination.luma);
             copy_block_to_buff(blockAddr, dct_recon, destination.luma);
         } else if (block_i == 4) {
-            assign_to_cb(dct_recon, block);
             copy_block_to_buff(mb_addr, dct_recon, destination.cb);
         } else if (block_i == 5) {
-            assign_to_cr(dct_recon, block);
             copy_block_to_buff(mb_addr, dct_recon, destination.cr);
         }
     }
 
     _past_intra_address = mb_addr;
-
-    return block;
 }
 
 std::array<int32_t, 8*8> mpeg1::SliceDecoder::read_intra_block(util::bitspan& data, int mb_addr, int block_num) {

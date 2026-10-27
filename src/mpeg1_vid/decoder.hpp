@@ -18,13 +18,7 @@ namespace mpeg1 {
     public:
         typedef std::span<std::byte> Data;
 
-        enum class ImageFormat {
-            RGB,
-            YCbCr
-        };
-
     private:
-        ImageFormat _format;
 
         Data _data;
 
@@ -37,7 +31,7 @@ namespace mpeg1 {
         mpeg1::PictureHeader _picture;
 
     public:
-        Decoder(ImageFormat format = ImageFormat::RGB) : _format(format) {}
+        Decoder() {}
         ~Decoder() {}
 
         void set_data(Data data);
