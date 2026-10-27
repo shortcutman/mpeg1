@@ -93,6 +93,9 @@ int main(int argc, char** argv) {
             image::writeOutPPM(
                 std::format("/tmp/danpg1/frame_{:04d}_{}.ppm", frame_number, frame->description),
                 *frame);
+        } else {
+            auto r = frame->as_float_rgba_vector();
+            (void)r;
         }
 
         frame_number++;
