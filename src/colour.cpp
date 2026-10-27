@@ -58,7 +58,7 @@ void image::ycbcrToRGBOverMCU(Colour *data, size_t width, size_t xStart, size_t 
     }
 }
 
-void image::writeOutPPM(std::ostream& out, Frame data) {    
+void image::writeOutPPM(std::ostream& out, Frame& data) {    
 
     auto rgba = data.as_float_rgba_vector();
 
@@ -78,7 +78,7 @@ void image::writeOutPPM(std::ostream& out, Frame data) {
     }
 }
 
-void image::writeOutPPM(std::string filepath, Frame data) {
+void image::writeOutPPM(std::string filepath, Frame& data) {
     std::ofstream file;
     file.open(filepath);
     

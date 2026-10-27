@@ -161,7 +161,7 @@ struct Frame {
 Colour ycbcrToRGB(const Colour& ycbcr);
 void ycbcrToRGBOverMCU(Colour* data, size_t width, size_t x, size_t y);
 
-void writeOutPPM(std::ostream& out, Frame data);
-void writeOutPPM(std::string filepath, Frame data);
+void writeOutPPM(std::ostream& out, Frame& data);
+void writeOutPPM(std::string filepath, Frame& data);
 
 }
