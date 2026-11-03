@@ -225,7 +225,7 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, const PictureHeade
     return block;
 }
 
-void mpeg1::calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock, int& right, int& down) {
+void mpeg1::calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock, int32_t& right, int32_t& down) {
     auto recon_right_for_prev = right;
     auto recon_down_for_prev = down;
 

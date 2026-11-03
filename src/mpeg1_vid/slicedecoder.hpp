@@ -23,8 +23,8 @@ namespace mpeg1 {
         int _dct_dc_cr_past = 1024;
 
         int _past_intra_address = -2;
-        int _mv_right_for_prev = 0;
-        int _mv_down_for_prev = 0;
+        int32_t _mv_right_for_prev = 0;
+        int32_t _mv_down_for_prev = 0;
 
     public:
         SliceDecoder(mpeg1::SequenceHeader sequence, mpeg1::PictureHeader picture);

@@ -99,7 +99,7 @@ namespace mpeg1 {
     SliceHeader read_slice_header(util::bitspan& data);
     Macroblock read_macroblock(util::bitspan& data, const PictureHeader& picture);
 
-    void calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock, int& right, int& down);
+    void calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock, int32_t& right, int32_t& down);
     size_t calc_dct_zz_zero(size_t dc_size, size_t dc_differential);
 
     bool check_cbp(uint32_t coded_block_pattern, size_t index);

@@ -252,8 +252,8 @@ TEST(MPEG1, calc_motion_vectors_predictive1) {
         .motion_vertical_forward_r = 0
     };
 
-    int right_for = 0;
-    int down_for = 0;
+    int32_t right_for = 0;
+    int32_t down_for = 0;
     mpeg1::calc_motion_vectors(pred_pic, block, right_for, down_for);
     EXPECT_EQ(right_for, 0);
     EXPECT_EQ(down_for, 0);
@@ -272,8 +272,8 @@ TEST(MPEG1, calc_motion_vectors_predictive2) {
         .motion_vertical_forward_r = 0
     };
 
-    int right_for = 1;
-    int down_for = 7;
+    int32_t right_for = 1;
+    int32_t down_for = 7;
     mpeg1::calc_motion_vectors(pred_pic, block, right_for, down_for);
     EXPECT_EQ(right_for, 2);
     EXPECT_EQ(down_for, 6);
