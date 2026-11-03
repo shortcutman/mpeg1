@@ -70,59 +70,56 @@ struct Colour {
 
 struct PixelBuffer {
 public:
-    typedef int32_t size_type;
-    typedef std::vector<size_type> PixelVector;
     static const size_t BlockSize = 8;
+    typedef int32_t size_type;
+
+    struct Deleter {
+        void operator()(size_type* ptr) const {
+            std::free(ptr);
+        }
+    };
+    typedef std::unique_ptr<size_type, Deleter> PixelVector;
 
 private:
     size_t _width = 0;
     size_t _height = 0;
     size_t _block_span = 0;
-    PixelVector _buffer;
+    PixelVector _buffer = nullptr;
+    size_t _buffer_size = 0;
 
 public:
-    PixelBuffer() {}
-    PixelBuffer(size_t width, size_t height) {
-        resize(width, height);
+    PixelBuffer();
+    PixelBuffer(size_t width, size_t height);
+    PixelBuffer(const PixelBuffer& other);
+    ~PixelBuffer();
+    
+    PixelBuffer& operator=(const PixelBuffer& other);
+
+    void resize(size_t width, size_t height);
+
+    size_t width() const;
+    size_t height() const;
+    size_t span_mb() const;
+
+    size_type& operator[](size_t index);
+    size_type operator[](size_t index) const;
+    size_type& at(size_t index);
+    size_type at(size_t index) const;
+
+    size_type* begin() {
+        return _buffer.get();
     }
 
-    void resize(size_t width, size_t height) {
-        _width = width;
-        _height = height;
-        _block_span = _width / BlockSize;
-        _buffer.resize(width * height);
+    size_type* end() {
+        return _buffer.get() + _width * _height;
     }
 
-    size_t width() const {
-        return _width;
+    size_type* begin() const {
+        return _buffer.get();
     }
 
-    size_t height() const {
-        return _height;
-    }
-
-    size_t span_mb() const {
-        return _block_span;
-    }
-
-    constexpr size_type& operator[](size_t index) {
-        return _buffer[index];
-    }
-
-    constexpr size_type& at(size_t index) {
-        return _buffer.at(index);
-    }
-
-    constexpr size_type at(size_t index) const {
-        return _buffer.at(index);
-    }
-
-    PixelVector::iterator begin() {
-        return _buffer.begin();
-    }
-
-    PixelVector::iterator end() {
-        return _buffer.end();
+    size_type* end() const {
+        return _buffer.get() + _width * _height;
     }
 };
 

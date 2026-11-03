@@ -6,6 +6,7 @@
 #include "colour.hpp"
 
 #include <fstream>
+#include <unistd.h>
 
 using namespace image;
 
@@ -22,6 +23,81 @@ float adjustAndClamp(float val) {
 }
 
 }
+
+image::PixelBuffer::PixelBuffer() {
+}
+
+image::PixelBuffer::PixelBuffer(size_t width, size_t height) {
+    resize(width, height);
+}
+
+image::PixelBuffer::PixelBuffer(const PixelBuffer& other) {
+    resize(other.width(), other.height());
+    std::copy(other.begin(), other.end(), this->begin());
+}
+
+image::PixelBuffer::~PixelBuffer() {
+}
+
+image::PixelBuffer& image::PixelBuffer::operator=(const PixelBuffer& other) {
+    if (this == &other) {
+        return *this;
+    }
+
+    resize(other.width(), other.height());
+    std::copy(other.begin(), other.end(), this->begin());
+    return *this;
+}
+
+void image::PixelBuffer::resize(size_t width, size_t height) {
+    _width = width;
+    _height = height;
+    _block_span = _width / BlockSize;
+
+    _buffer_size = _width * _height * sizeof(size_type);
+    auto page_size = getpagesize();
+    auto aligned_size = (_buffer_size + page_size - 1) / page_size * page_size;
+    _buffer.reset(reinterpret_cast<size_type*>(std::aligned_alloc(page_size, aligned_size)));
+    std::fill(begin(), end(), 0);
+}
+
+size_t image::PixelBuffer::width() const {
+    return _width;
+}
+
+size_t image::PixelBuffer::height() const {
+    return _height;
+}
+
+size_t image::PixelBuffer::span_mb() const {
+    return _block_span;
+}
+
+image::PixelBuffer::size_type& image::PixelBuffer::operator[](size_t index) {
+    return *(_buffer.get() + index);
+}
+
+image::PixelBuffer::size_type image::PixelBuffer::operator[](size_t index) const {
+    return *(_buffer.get() + index);
+}
+
+image::PixelBuffer::size_type& image::PixelBuffer::at(size_t index) {
+    if (index > _buffer_size) {
+        throw std::runtime_error("Out of bounds.");
+    } else {
+        return (*this)[index];
+    }
+}
+
+image::PixelBuffer::size_type image::PixelBuffer::at(size_t index) const {
+    if (index > _buffer_size) {
+        throw std::runtime_error("Out of bounds.");
+    } else {
+        return (*this)[index];
+    }
+}
+
+static_assert(std::is_copy_constructible_v<image::PixelBuffer>);
 
 std::vector<std::array<float, 4>> image::Frame::as_float_rgba_vector() const {
     std::vector<std::array<float, 4>> img_float;
@@ -90,3 +166,5 @@ void image::writeOutPPM(std::string filepath, Frame& data) {
     
     file.close();
 }
+
+static_assert(std::is_copy_constructible_v<image::Frame>);
