@@ -5,6 +5,9 @@
 
 #include "mpeg1_vid/copy.hpp"
 
+#include "util.hpp"
+
+#include <algorithm>
 #include <gtest/gtest.h>
 
 TEST(Copy, copy_block_to_buff) {
@@ -35,17 +38,17 @@ TEST(Copy, add_block_to_buff) {
 
 TEST(Copy, copy_block_mv_from_image_no_movement) {
     auto source = image::Frame::make_frame(16, 16);
-    
-    for (size_t i = 0; i < 256; i++) {
-        source.image[i] = image::Colour{.r = 50, .g = 100, .b = 150};
-    }
+    auto destination = image::Frame::make_frame(16, 16);
 
-    auto copy = mpeg1::copy_block_mv_from_image(0, std::make_tuple(0, 0), source);
+    std::fill(source.luma.begin(), source.luma.end(), 50);
+    std::fill(source.cb.begin(), source.cb.end(), 100);
+    std::fill(source.cr.begin(), source.cr.end(), 150);
 
-    for (size_t i = 0; i < 64; i++) {
-        image::Colour c{.r = 50, .g = 100, .b = 150};
-        EXPECT_EQ(copy[i], c);
-    }
+    mpeg1::copy_mv_block(0, std::make_tuple(0, 0), source, destination);
+
+    ASSERT_TRUE(std::all_of(destination.luma.begin(), destination.luma.end(), [](auto i) { return i == 50;}));
+    ASSERT_TRUE(std::all_of(destination.cb.begin(), destination.cb.end(), [](auto i) { return i == 100;}));
+    ASSERT_TRUE(std::all_of(destination.cr.begin(), destination.cr.end(), [](auto i) { return i == 150;}));
 }
 
 TEST(Copy, copy_block_mv_from_image_movement) {
@@ -53,38 +56,22 @@ TEST(Copy, copy_block_mv_from_image_movement) {
     
     for (size_t y = 0; y < 16; y++) {
         for (size_t x = 0; x < 16; x++) {
-            source.image[y * 32 + x] = image::Colour{.r = 50, .g = 100, .b = 150};
+            source.luma.at(y * 32 + x) = 50;
+            source.cb.at((y / 2) * 16 + x/2) = 100;
+            source.cr.at((y / 2) * 16 + x/2) = 150;
         }
     }
+    // image::writeOutPPM("/tmp/danpg1/source.ppm", source);
+    
+    auto copy_mv_down = image::Frame::make_frame(32, 32);
+    mpeg1::copy_mv_block(2, std::make_tuple(0, -4), source, copy_mv_down);
+    // image::writeOutPPM("/tmp/danpg1/copy_mv_down.ppm", copy_mv_down);
+    ASSERT_TRUE(util::compare_image("../src/mpeg1_vid/tests/data/copy_block_mv_from_image_movement_mv_down.ppm", copy_mv_down));
 
-    auto copy_no_mv = mpeg1::copy_block_mv_from_image(2, std::make_tuple(0, 0), source);
-    for (size_t i = 0; i < 256; i++) {
-        image::Colour c{};
-        EXPECT_EQ(copy_no_mv[i], c);
-    }
-
-    auto copy_mv_down = mpeg1::copy_block_mv_from_image(2, std::make_tuple(0, -4), source);
-    for (size_t i = 0; i < 32; i++) {
-        image::Colour c{.r = 50, .g = 100, .b = 150};
-        EXPECT_EQ(copy_mv_down[i], c) << "Position: " << i;
-    }
-    for (size_t i = 32; i < 256; i++) {
-        image::Colour c{.r = 0, .g = 0, .b = 0};
-        EXPECT_EQ(copy_mv_down[i], c) << "Position: " << i;
-    }
-
-    auto copy_mv_left = mpeg1::copy_block_mv_from_image(1, std::make_tuple(-4, 0), source);
-    for (size_t y = 0; y < 16; y++) {
-        for (size_t x = 0; x < 16; x++) {
-            if (x < 2) {
-                image::Colour c{.r = 50, .g = 100, .b = 150};
-                EXPECT_EQ(copy_mv_left[y * 16 + x], c) << "Position x: " << x << " y: " << y;
-            } else {
-                image::Colour c{.r = 0, .g = 0, .b = 0};
-                EXPECT_EQ(copy_mv_left[y * 16 + x], c) << "Position x: " << x << " y: " << y;
-            }
-        }
-    }
+    auto copy_mv_left = image::Frame::make_frame(32, 32);
+    mpeg1::copy_mv_block(1, std::make_tuple(-4, 0), source, copy_mv_left);
+    // image::writeOutPPM("/tmp/danpg1/copy_mv_left.ppm", copy_mv_left);
+    ASSERT_TRUE(util::compare_image("../src/mpeg1_vid/tests/data/copy_block_mv_from_image_movement_mv_left.ppm", copy_mv_left));
 }
 
 TEST(Copy, copy_block_mv_from_half_movement) {
@@ -92,30 +79,20 @@ TEST(Copy, copy_block_mv_from_half_movement) {
     
     for (size_t y = 0; y < 16; y++) {
         for (size_t x = 0; x < 16; x++) {
-            source.image[y * 32 + x] = image::Colour{.y = 50};
+            source.luma.at(y * 32 + x) = 50;
+            source.cb.at((y / 2) * 16 + x/2) = 100;
+            source.cr.at((y / 2) * 16 + x/2) = 150;
         }
     }
+    // image::writeOutPPM("/tmp/danpg1/source.ppm", source);
 
-    auto copy_mv_down = mpeg1::copy_block_mv_from_image(2, std::make_tuple(0, -1), source);
-    for (size_t i = 0; i < 16; i++) {
-        image::Colour c{.y = 25};
-        EXPECT_EQ(copy_mv_down[i], c) << "Position: " << i;
-    }
-    for (size_t i = 16; i < 256; i++) {
-        image::Colour c{.r = 0, .g = 0, .b = 0};
-        EXPECT_EQ(copy_mv_down[i], c) << "Position: " << i;
-    }
+    auto copy_mv_down = image::Frame::make_frame(32, 32);
+    mpeg1::copy_mv_block(2, std::make_tuple(0, -1), source, copy_mv_down);
+    // image::writeOutPPM("/tmp/danpg1/copy_mv_down.ppm", copy_mv_down);
+    ASSERT_TRUE(util::compare_image("../src/mpeg1_vid/tests/data/copy_block_mv_from_half_movement_mv_down.ppm", copy_mv_down));
 
-    auto copy_mv_left = mpeg1::copy_block_mv_from_image(1, std::make_tuple(-1, 0), source);
-    for (size_t y = 0; y < 16; y++) {
-        for (size_t x = 0; x < 16; x++) {
-            if (x < 1) {
-                image::Colour c{.r = 25, .g = 0, .b = 0};
-                EXPECT_EQ(copy_mv_left[y * 16 + x], c) << "Position x: " << x << " y: " << y;
-            } else {
-                image::Colour c{.r = 0, .g = 0, .b = 0};
-                EXPECT_EQ(copy_mv_left[y * 16 + x], c) << "Position x: " << x << " y: " << y;
-            }
-        }
-    }
+    auto copy_mv_left = image::Frame::make_frame(32, 32);
+    mpeg1::copy_mv_block(1, std::make_tuple(-1, 0), source, copy_mv_left);
+    // image::writeOutPPM("/tmp/danpg1/copy_mv_left.ppm", copy_mv_left);
+    ASSERT_TRUE(util::compare_image("../src/mpeg1_vid/tests/data/copy_block_mv_from_half_movement_mv_left.ppm", copy_mv_left));
 }
