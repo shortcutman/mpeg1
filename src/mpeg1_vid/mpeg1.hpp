@@ -71,7 +71,7 @@ namespace mpeg1 {
     };
 
     typedef std::array<image::Colour, 256> MacroblockData;
-    typedef std::array<int, 64> Block;
+    typedef std::array<int32_t, 64> Block;
 
     struct Macroblock {
         uint64_t address_increment = 0;

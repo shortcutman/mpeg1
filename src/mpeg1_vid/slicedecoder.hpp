@@ -35,8 +35,11 @@ namespace mpeg1 {
         void reset();
 
         void read_intra_blocks(util::bitspan& data, int mb_addr, image::Frame& destination);
-        std::array<int32_t, 8*8> read_intra_block(util::bitspan& data, int mb_addr, int block_num);
-        std::array<int, 64> read_block(util::bitspan& data, size_t block_index);
+        mpeg1::Block read_intra_block(util::bitspan& data, int mb_addr, int block_num);
+        void idct_intra_block(mpeg1::Block& block);
+        void read_pred_blocks(util::bitspan& data, int mb_addr, mpeg1::Macroblock& mb, const image::Frame& source, image::Frame& destination);
+        mpeg1::Block read_pred_block(util::bitspan& data, size_t block_index);
+        void idct_pred_block(mpeg1::Block& block);
 
         //for unit tests
         void set_slice(mpeg1::SliceHeader slice);

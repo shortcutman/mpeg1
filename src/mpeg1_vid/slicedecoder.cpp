@@ -76,27 +76,7 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
             if (macroblock.type.intra) {
                 read_intra_blocks(bits, macroblock_address, destination);
             } else {
-                mpeg1::calc_motion_vectors(_picture, macroblock, _mv_right_for_prev, _mv_down_for_prev);
-                copy_mv_block(macroblock_address, _mv_right_for_prev, _mv_down_for_prev, source, destination);
-                
-                if (macroblock.type.pattern) {
-                    for (size_t i = 0; i < 6; i++) {
-                        if (!mpeg1::check_cbp(macroblock.coded_block_pattern, i)) {
-                            continue;
-                        }
-
-                        auto dct = read_block(bits, i);
-
-                        if (i < 4) {
-                            auto blockAddr = mb_luma_to_block(macroblock_address, i, destination.luma);
-                            add_block_to_buff(blockAddr, dct, destination.luma);
-                        } else if (i == 4) {
-                            add_block_to_buff(macroblock_address, dct, destination.cb);
-                        } else if (i == 5) {
-                            add_block_to_buff(macroblock_address, dct, destination.cr);
-                        }
-                    }
-                }
+                read_pred_blocks(bits, macroblock_address, macroblock, source, destination);
             }
 
             previous_macroblock_address = macroblock_address;
@@ -124,6 +104,7 @@ void mpeg1::SliceDecoder::read_intra_blocks(util::bitspan& data,
                                             image::Frame& destination) {
     for (size_t block_i = 0; block_i < 6; block_i++) {
         auto dct_recon = read_intra_block(data, mb_addr, block_i);
+        idct_intra_block(dct_recon);
 
         if (block_i < 4) {
             auto blockAddr = mb_luma_to_block(mb_addr, block_i, destination.luma);
@@ -138,8 +119,8 @@ void mpeg1::SliceDecoder::read_intra_blocks(util::bitspan& data,
     _past_intra_address = mb_addr;
 }
 
-std::array<int32_t, 8*8> mpeg1::SliceDecoder::read_intra_block(util::bitspan& data, int mb_addr, int block_num) {
-    std::array<int, 64> dct_recon{};
+mpeg1::Block mpeg1::SliceDecoder::read_intra_block(util::bitspan& data, int mb_addr, int block_num) {
+    mpeg1::Block dct_recon{};
     int dct_dc_size = 0;
     int* dct_dc_past = &_dct_dc_y_past;
 
@@ -211,17 +192,47 @@ std::array<int32_t, 8*8> mpeg1::SliceDecoder::read_intra_block(util::bitspan& da
 
     data.read_bits_be(2);
 
-    image::idct(dct_recon);
-    for (auto& val : dct_recon) {
-        val = std::max(0, std::min(val, 255));
-    }
-
     return dct_recon;
 }
 
-std::array<int, 64> mpeg1::SliceDecoder::read_block(util::bitspan& data, size_t block_index) {
-    std::array<int, 64> dct_recon;
-    std::fill(dct_recon.begin(), dct_recon.end(), 0);
+void mpeg1::SliceDecoder::idct_intra_block(mpeg1::Block& block) {
+    image::idct(block);
+    for (auto& val : block) {
+        val = std::max(0, std::min(val, 255));
+    }
+}
+
+void mpeg1::SliceDecoder::read_pred_blocks(util::bitspan& data,
+                                           int mb_addr,
+                                           mpeg1::Macroblock& macroblock,
+                                           const image::Frame& source,
+                                           image::Frame& destination) {
+    mpeg1::calc_motion_vectors(_picture, macroblock, _mv_right_for_prev, _mv_down_for_prev);
+    copy_mv_block(mb_addr, _mv_right_for_prev, _mv_down_for_prev, source, destination);
+    
+    if (macroblock.type.pattern) {
+        for (size_t i = 0; i < 6; i++) {
+            if (!mpeg1::check_cbp(macroblock.coded_block_pattern, i)) {
+                continue;
+            }
+
+            auto dct = read_pred_block(data, i);
+            idct_pred_block(dct);
+
+            if (i < 4) {
+                auto blockAddr = mb_luma_to_block(mb_addr, i, destination.luma);
+                add_block_to_buff(blockAddr, dct, destination.luma);
+            } else if (i == 4) {
+                add_block_to_buff(mb_addr, dct, destination.cb);
+            } else if (i == 5) {
+                add_block_to_buff(mb_addr, dct, destination.cr);
+            }
+        }
+    }
+}
+
+mpeg1::Block mpeg1::SliceDecoder::read_pred_block(util::bitspan& data, size_t block_index) {
+    mpeg1::Block dct_recon{};
 
     size_t dct_i = 0;
     do {
@@ -271,12 +282,14 @@ std::array<int, 64> mpeg1::SliceDecoder::read_block(util::bitspan& data, size_t 
 
     data.read_bits_be(2);
 
-    image::idct(dct_recon);
-    for (auto& val : dct_recon) {
+    return dct_recon;
+}
+
+void mpeg1::SliceDecoder::idct_pred_block(mpeg1::Block& block) {
+    image::idct(block);
+    for (auto& val : block) {
         val = std::max(-256, std::min(val, 255));
     }
-
-    return dct_recon;
 }
 
 void mpeg1::SliceDecoder::set_slice(mpeg1::SliceHeader slice) {

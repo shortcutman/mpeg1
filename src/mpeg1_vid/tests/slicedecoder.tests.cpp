@@ -70,16 +70,19 @@ TEST(SliceDecoderTest, read_predictive_macroblock_and_block_data) {
 
     std::array<int, 64> block;
 
-    block = slice_dec.read_block(bits, 1);
+    block = slice_dec.read_pred_block(bits, 1);
+    slice_dec.idct_pred_block(block);
 
     EXPECT_TRUE(std::all_of(block.begin(), block.end(), std::bind(std::equal_to<>(), std::placeholders::_1, -1)));
 
-    block = slice_dec.read_block(bits, 2);
+    block = slice_dec.read_pred_block(bits, 2);
+    slice_dec.idct_pred_block(block);
     EXPECT_TRUE(std::all_of(block.begin(), block.begin() + 32, std::bind(std::equal_to<>(), std::placeholders::_1, 0)));
     EXPECT_TRUE(std::all_of(block.begin() + 32, block.begin() + 40, std::bind(std::equal_to<>(), std::placeholders::_1, 1)));
     EXPECT_TRUE(std::all_of(block.begin() + 40, block.begin() + 56, std::bind(std::equal_to<>(), std::placeholders::_1, 2)));
     EXPECT_TRUE(std::all_of(block.begin() + 56, block.end(), std::bind(std::equal_to<>(), std::placeholders::_1, 3)));
 
-    block = slice_dec.read_block(bits, 3);
+    block = slice_dec.read_pred_block(bits, 3);
+    slice_dec.idct_pred_block(block);
     EXPECT_TRUE(std::all_of(block.begin(), block.end(), std::bind(std::equal_to<>(), std::placeholders::_1, 1)));
 }
