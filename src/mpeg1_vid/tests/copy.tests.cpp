@@ -44,7 +44,7 @@ TEST(Copy, copy_block_mv_from_image_no_movement) {
     std::fill(source.cb.begin(), source.cb.end(), 100);
     std::fill(source.cr.begin(), source.cr.end(), 150);
 
-    mpeg1::copy_mv_block(0, std::make_tuple(0, 0), source, destination);
+    mpeg1::copy_mv_block(0, 0, 0, source, destination);
 
     ASSERT_TRUE(std::all_of(destination.luma.begin(), destination.luma.end(), [](auto i) { return i == 50;}));
     ASSERT_TRUE(std::all_of(destination.cb.begin(), destination.cb.end(), [](auto i) { return i == 100;}));
@@ -64,12 +64,12 @@ TEST(Copy, copy_block_mv_from_image_movement) {
     // image::writeOutPPM("/tmp/danpg1/source.ppm", source);
     
     auto copy_mv_down = image::Frame::make_frame(32, 32);
-    mpeg1::copy_mv_block(2, std::make_tuple(0, -4), source, copy_mv_down);
+    mpeg1::copy_mv_block(2, 0, -4, source, copy_mv_down);
     // image::writeOutPPM("/tmp/danpg1/copy_mv_down.ppm", copy_mv_down);
     ASSERT_TRUE(util::compare_image("../src/mpeg1_vid/tests/data/copy_block_mv_from_image_movement_mv_down.ppm", copy_mv_down));
 
     auto copy_mv_left = image::Frame::make_frame(32, 32);
-    mpeg1::copy_mv_block(1, std::make_tuple(-4, 0), source, copy_mv_left);
+    mpeg1::copy_mv_block(1, -4, 0, source, copy_mv_left);
     // image::writeOutPPM("/tmp/danpg1/copy_mv_left.ppm", copy_mv_left);
     ASSERT_TRUE(util::compare_image("../src/mpeg1_vid/tests/data/copy_block_mv_from_image_movement_mv_left.ppm", copy_mv_left));
 }
@@ -87,12 +87,12 @@ TEST(Copy, copy_block_mv_from_half_movement) {
     // image::writeOutPPM("/tmp/danpg1/source.ppm", source);
 
     auto copy_mv_down = image::Frame::make_frame(32, 32);
-    mpeg1::copy_mv_block(2, std::make_tuple(0, -1), source, copy_mv_down);
+    mpeg1::copy_mv_block(2, 0, -1, source, copy_mv_down);
     // image::writeOutPPM("/tmp/danpg1/copy_mv_down.ppm", copy_mv_down);
     ASSERT_TRUE(util::compare_image("../src/mpeg1_vid/tests/data/copy_block_mv_from_half_movement_mv_down.ppm", copy_mv_down));
 
     auto copy_mv_left = image::Frame::make_frame(32, 32);
-    mpeg1::copy_mv_block(1, std::make_tuple(-1, 0), source, copy_mv_left);
+    mpeg1::copy_mv_block(1, -1, 0, source, copy_mv_left);
     // image::writeOutPPM("/tmp/danpg1/copy_mv_left.ppm", copy_mv_left);
     ASSERT_TRUE(util::compare_image("../src/mpeg1_vid/tests/data/copy_block_mv_from_half_movement_mv_left.ppm", copy_mv_left));
 }

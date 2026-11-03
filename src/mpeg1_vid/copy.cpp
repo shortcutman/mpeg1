@@ -38,13 +38,11 @@ void mpeg1::add_block_to_buff(int mb_addr, mpeg1::Block& block, image::PixelBuff
     }
 }
 
-void mpeg1::copy_mv_block(int addr, std::tuple<int, int> motion_vector, const image::Frame& source, image::Frame& destination) {
+void mpeg1::copy_mv_block(int addr, int32_t recon_right_for, int32_t recon_down_for, const image::Frame& source, image::Frame& destination) {
     size_t span = source.encoded_width;
 
     auto addrHor = (addr % (span / 16)) * 16;
     auto addrVer = (addr / (span / 16)) * 16;
-
-    auto [recon_right_for, recon_down_for] = motion_vector;
 
     auto right_for_y = recon_right_for >> 1;
     auto down_for_y = recon_down_for >> 1;
