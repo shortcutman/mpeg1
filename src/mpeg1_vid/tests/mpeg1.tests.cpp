@@ -252,7 +252,11 @@ TEST(MPEG1, calc_motion_vectors_predictive1) {
         .motion_vertical_forward_r = 0
     };
 
-    EXPECT_EQ(mpeg1::calc_motion_vectors(pred_pic, block, std::make_tuple(0, 0)), std::make_tuple(0, 0));
+    int right_for = 0;
+    int down_for = 0;
+    mpeg1::calc_motion_vectors(pred_pic, block, right_for, down_for);
+    EXPECT_EQ(right_for, 0);
+    EXPECT_EQ(down_for, 0);
 }
 
 TEST(MPEG1, calc_motion_vectors_predictive2) {
@@ -268,7 +272,11 @@ TEST(MPEG1, calc_motion_vectors_predictive2) {
         .motion_vertical_forward_r = 0
     };
 
-    EXPECT_EQ(mpeg1::calc_motion_vectors(pred_pic, block, std::make_tuple(1, 7)), std::make_tuple(2, 6));
+    int right_for = 1;
+    int down_for = 7;
+    mpeg1::calc_motion_vectors(pred_pic, block, right_for, down_for);
+    EXPECT_EQ(right_for, 2);
+    EXPECT_EQ(down_for, 6);
 }
 
 TEST(MPEG1, calc_dct_zz_zero) {

@@ -76,9 +76,8 @@ int mpeg1::SliceDecoder::decode(std::span<std::byte>& data, const image::Frame& 
             if (macroblock.type.intra) {
                 read_intra_blocks(bits, macroblock_address, destination);
             } else {
-                auto mv = mpeg1::calc_motion_vectors(_picture, macroblock, std::make_tuple(_mv_right_for_prev, _mv_down_for_prev));
-                std::tie(_mv_right_for_prev, _mv_down_for_prev) = mv;
-                copy_mv_block(macroblock_address, mv, source, destination);
+                mpeg1::calc_motion_vectors(_picture, macroblock, _mv_right_for_prev, _mv_down_for_prev);
+                copy_mv_block(macroblock_address, std::make_tuple(_mv_right_for_prev, _mv_down_for_prev), source, destination);
                 
                 if (macroblock.type.pattern) {
                     for (size_t i = 0; i < 6; i++) {

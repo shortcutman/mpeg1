@@ -225,8 +225,9 @@ mpeg1::Macroblock mpeg1::read_macroblock(util::bitspan& data, const PictureHeade
     return block;
 }
 
-std::tuple<int, int> mpeg1::calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock, std::tuple<int, int> prev) {
-    auto [recon_right_for_prev, recon_down_for_prev] = prev;
+void mpeg1::calc_motion_vectors(const PictureHeader& picture, const Macroblock& macroblock, int& right, int& down) {
+    auto recon_right_for_prev = right;
+    auto recon_down_for_prev = down;
 
     auto forward_r_size = picture.forward_f_code - 1;
     auto forward_f = 1 << forward_r_size;
@@ -302,7 +303,8 @@ std::tuple<int, int> mpeg1::calc_motion_vectors(const PictureHeader& picture, co
         recon_down_for = recon_down_for << 1;
     }
 
-    return std::make_tuple(recon_right_for, recon_down_for);
+    right = recon_right_for;
+    down = recon_down_for;
 }
 
 size_t mpeg1::calc_dct_zz_zero(size_t dc_size, size_t dc_differential) {
