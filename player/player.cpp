@@ -23,18 +23,13 @@ std::vector<std::byte> read_file(const std::string& filename) {
     return buffer;
 }
 
-void frame_to_texture(const image::Frame& frame, MTL::Texture* texture) {
-    auto image = frame.as_float_rgba_vector();
-    MTL::Region region = {0, 0, 0, frame.encoded_width, frame.encoded_height, 1};
-    texture->replaceRegion(region, 0, image.data(), 16 * frame.encoded_width);
-}
-
 }
 
 player::Player::Player(NS::SharedPtr<MTL::Device> device)
 : _metal_device(device)
 , _decode_frame_rate(std::numeric_limits<float>::signaling_NaN())
 {
+    _converter.setup(device);
 }
 
 player::Player::~Player() {
@@ -88,6 +83,10 @@ bool player::Player::open(std::string filepath) {
     }
 
     return true;
+}
+
+void player::Player::decodeWithMetal(bool metal) {
+    _decode_with_metal = metal;
 }
 
 MTL::Texture* player::Player::texture() const {
@@ -170,12 +169,12 @@ void player::Player::buffer_video() {
             auto frame = _video_decoder.next_frame();
 
             if (frame.has_value()) {
+                frame_to_texture(frame.value(), texture.get());
 
                 auto decode_duration = SDL_GetTicks() - start;
                 _total_decode_time_ms += decode_duration;
                 _decoded_frames++;
 
-                frame_to_texture(frame.value(), texture.get());
                 _edit_queue.acquire();
                 _frame_queue.push(texture);
                 _edit_queue.release();
@@ -191,5 +190,15 @@ void player::Player::buffer_audio() {
             !SDL_PutAudioStreamData(_audio_stream, samples.data(), samples.size() * 2)) {
             std::println("Failed to put audio data: {}", SDL_GetError());
         }
+    }
+}
+
+void player::Player::frame_to_texture(const image::Frame& frame, MTL::Texture* texture) {
+    if (_decode_with_metal) {
+        _converter.convert(frame, texture);
+    } else {
+        auto image = frame.as_float_rgba_vector();
+        MTL::Region region = {0, 0, 0, frame.encoded_width, frame.encoded_height, 1};
+        texture->replaceRegion(region, 0, image.data(), 16 * frame.encoded_width);
     }
 }

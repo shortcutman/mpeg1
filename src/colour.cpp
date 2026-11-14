@@ -73,6 +73,10 @@ size_t image::PixelBuffer::span_mb() const {
     return _block_span;
 }
 
+size_t image::PixelBuffer::buffer_size() const {
+    return _buffer_size;
+}
+
 image::PixelBuffer::size_type& image::PixelBuffer::operator[](size_t index) {
     return *(_buffer.get() + index);
 }

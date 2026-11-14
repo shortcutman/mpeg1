@@ -8,6 +8,11 @@ set(CMAKE_COMPILE_WARNING_AS_ERROR True)
 
 add_compile_options(-Wall)
 
+find_package(SDL3 REQUIRED)
+include(vendor/metalcpp/metalcpp.cmake)
+include(vendor/imgui/imgui.cmake)
+include(vendor/cli11/cli11.cmake)
+
 add_library(libdanpg1
     src/bitspan.cpp
     src/colour.cpp
@@ -78,8 +83,5 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(danpg1_tests)
 
-find_package(SDL3 REQUIRED)
-include(vendor/metalcpp/metalcpp.cmake)
-include(vendor/imgui/imgui.cmake)
-include(vendor/cli11/cli11.cmake)
+include(gpu/gpu.cmake)
 include(player/player.cmake)

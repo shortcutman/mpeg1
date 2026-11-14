@@ -100,6 +100,7 @@ public:
     size_t width() const;
     size_t height() const;
     size_t span_mb() const;
+    size_t buffer_size() const;
 
     size_type& operator[](size_t index);
     size_type operator[](size_t index) const;

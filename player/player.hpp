@@ -8,6 +8,8 @@
 #include "mpeg1_vid/decoder.hpp"
 #include "mpeg1_aud/audiodecoder.hpp"
 
+#include "image.hpp"
+
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_timer.h>
 
@@ -26,8 +28,10 @@ namespace player {
         const size_t FRAME_BUFFER_COUNT = 5;
 
         NS::SharedPtr<MTL::Device> _metal_device;
-        NS::SharedPtr<MTL::Texture> _texture_current;
+        bool _decode_with_metal = false;
+        metal::ImageConversion _converter;
 
+        NS::SharedPtr<MTL::Texture> _texture_current;
         std::queue<NS::SharedPtr<MTL::Texture>> _frame_queue;
         std::vector<NS::SharedPtr<MTL::Texture>> _reuse_queue;
 
@@ -58,6 +62,7 @@ namespace player {
         ~Player();
 
         bool open(std::string filepath);
+        void decodeWithMetal(bool metal);
 
         MTL::Texture* texture() const;
         void tick();
@@ -73,5 +78,7 @@ namespace player {
 
         void buffer_video();
         void buffer_audio();
+
+        void frame_to_texture(const image::Frame& frame, MTL::Texture* texture);
     };
 }

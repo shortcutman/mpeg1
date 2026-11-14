@@ -10,6 +10,7 @@ target_link_libraries(danpg1_player PRIVATE
     imgui
     metalcpp
     libdanpg1
+    gpu
     "-framework Foundation"
     "-framework Metal"
     "-framework QuartzCore"
